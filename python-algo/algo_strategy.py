@@ -46,6 +46,19 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.opponent_left_x = [i for i in range(0, 14)]
         self.opponent_right_x = [i for i in range(13, 28)]
         self.to_rebuild = []
+        self.spawn_locaations = [[0, 13], [27, 13], [1, 12], [26, 12], [2, 11], [25, 11], [3, 10], [24, 10], [4, 9], [23, 9], [5, 8], [22, 8], [6, 7], [21, 7], [7, 6], [20, 6], [8, 5], [19, 5], [9, 4], [18, 4], [10, 3], [17, 3], [11, 2], [16, 2], [12, 1], [15, 1], [13, 0], [14, 0]]
+        # list of structures/upgrades to build, will do so in order
+        # so, put higher priority structures in front of list
+        self.base = [([1, 12], TURRET), ([24, 13], TURRET), ([24, 12], TURRET), ([22, 11], TURRET),
+                     ([22, 10], TURRET), ([0, 13], WALL), ([1, 13], WALL), ([2, 11], WALL), 
+                     ([3, 10], WALL), ([4, 9], WALL), ([5, 8], WALL), ([6, 7], WALL), 
+                     ([7, 7], WALL), ([8, 7], WALL), ([0, 13], WALL), ([9, 7], WALL), 
+                     ([10, 6], WALL), ([11, 7], WALL), ([12, 7], WALL), ([13, 7], WALL), 
+                     ([14, 7], WALL), ([15, 7], WALL), ([16, 7], WALL), ([17, 7], WALL), 
+                     ([18, 7], WALL), ([19, 8], WALL), ([20, 9], WALL), ([21, 10], WALL),
+                     ([23, 13], WALL), ([25, 13], WALL),
+                     ]
+        self.corner_walls = [[26, 12], [26, 13], [27, 13]]
 
     def on_turn(self, turn_state):
         """
@@ -68,14 +81,21 @@ class AlgoStrategy(gamelib.AlgoCore):
         my_resources = game_state.get_resources(player_index = 0)
         opponent_resources = game_state.get_resources(player_index = 1)
 
-        left_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_left_x, None)
-        right_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_right_x, None)
+        # if opponent has a lot of MP (9), spawn an interceptor
+        if opponent_resources[1] >= 9:
+            game_state.attempt_spawn(INTERCEPTOR, [7, 6])
+
+        # spawn corner walls
+        game_state.attempt_spawn(WALL, self.corner_walls)
 
         # if building were refunded previous round, rebuild them this round
         if self.to_rebuild:
             for unit_type, unit_location in self.to_rebuild:
                 game_state.attempt_spawn(unit_type, unit_location)
                 self.to_rebuild.remove((unit_type, unit_location))
+
+        # find and remove all damaged building so they can be rebuilt
+        self.remove_damaged(game_state) 
 
         # send interceptors on very first turn
         if game_state.turn_number == 0:
@@ -85,70 +105,52 @@ class AlgoStrategy(gamelib.AlgoCore):
         if game_state.turn_number >= 1:
             # TODO: adjust which side base is facing based on opponent strong side
             # TODO: split up the locations so code will only build/upgrade most important areas first
+            # TODO: logic decide on when demolishers/scouts are spawned
+            #left_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_left_x, None)
+            #right_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_right_x, None)
             #if left_turrets >= right_turrets:
             #elif right_turrets > left_turrets:
             #initial_walls = [[0, 13], [1, 13], [23, 13], [25, 13], [26, 13], [27, 13], [1, 12], [26, 12], [2, 11], [3, 10], [21, 10], [4, 9], [20, 9], [5, 8], [19, 8], [6, 7], [7, 7], [8, 7], [9, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [10, 6]]
            
-            wall_locations = [[0, 13], [1, 13], [2, 13], [4, 13], [26, 13], [27, 13], [1, 12], [25, 11], [6, 10], [24, 10], [7, 9], [23, 9], [8, 8], [22, 8], [9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [18, 7], [19, 7], [20, 7], [21, 7], [17, 6]]
-            turret_locations = [
-            [3, 13], [3, 12], [5, 11], [26, 12], 
-            [5, 10], [3, 10]
-            ]
-            wall_upgrades = [[27, 13], [26, 13], [2, 13], [4, 13], [25, 11], [6, 10], [24, 10]]
+            for location, structure in self.base:
+                if structure != "UPGRADE":
+                    game_state.attempt_spawn(structure, location)
 
-            # game_state.attempt_spawn() takes as an arguement a single location or a list of locations
-            game_state.attempt_spawn(WALL, wall_locations)  
-            game_state.attempt_spawn(TURRET, turret_locations)
-            game_state.attempt_upgrade(wall_upgrades)
-            
-            wall_remove = [[1, 12], [1, 13], [0, 13]]
-            game_state.attempt_remove(wall_remove)
+            # remove corner walls to allow us to attack corner if we choose to
+            game_state.attempt_remove(self.corner_walls)
 
-        # find and remove all damaged building so they can be rebuilt
-        self.remove_damaged(game_state) 
-
-        max_demolishers = game_state.number_affordable(DEMOLISHER)
-        max_scouts = game_state.number_affordable(SCOUT)
-
-        # if opponent has a lot of MP (9), spawn an interceptor
-        if opponent_resources[1] >= 9:
-            game_state.attempt_spawn(INTERCEPTOR, (12, 1))
-
-        
-
-
-
-
-        # damages = []
-        # # Get the damage estimate each path will take
-        # for location in location_options:
-        #     path = game_state.find_path_to_edge(location)
-        #     damage = 0
-        #     for path_location in path:
-        #         # Get number of enemy turrets that can attack each location and multiply by turret damage
-        #         damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(TURRET, game_state.config).damage_i
-        #     damages.append(damage)
-        # return location_options[damages.index(min(damages))]
-    
-
+            # find all not blocked mobile unit spawn locations
+            spawn_filtered = self.filter_blocked_locations(self.spawn_locaations, game_state)
+            max_demolishers = game_state.number_affordable(DEMOLISHER)
+            max_scouts = game_state.number_affordable(SCOUT)
+            # for spawn_location in spawn_filtered:
+            #     path = game_state.find_path_to_edge(spawn_location)
+            #     for path_location in path:
+            #         pass
 
     def remove_damaged(self, game_state):
         """
-        Find all damaged structural buildings and remove them, append the unit removed and location to be 
-        added back on next turn
+        Find all damaged turrets and walls, remove them, append the unit removed and location to be 
+        added back on next turn to list
         """
         for location in game_state.game_map:
             if game_state.contains_stationary_unit(location):
                 for unit in game_state.game_map[location]:
                     if unit.player_index == 0:
-                        if unit.health != unit.max_health:    # fix bug where upgraded unit always removed
-                            game_state.attempt_remove(location)
-                            self.to_rebuild.append((unit.unit_type, location))
-            
-
-        
-        
-
+                        if unit.unit_type == WALL:
+                            if not(unit.upgraded):
+                                if unit.health < 12:    
+                                    game_state.attempt_remove(location)
+                                    self.to_rebuild.append((unit.unit_type, location))
+                            elif unit.upgraded:
+                                if unit.health < 114: 
+                                    game_state.attempt_remove(location)
+                                    self.to_rebuild.append((unit.unit_type, location))
+                        elif unit.unit_type == TURRET:
+                            if unit.health < 72:    
+                                game_state.attempt_remove(location)
+                                self.to_rebuild.append((unit.unit_type, location))
+                                    
     """
     NOTE: All the methods after this point are part of the sample starter-algo
     strategy and can safely be replaced for your custom algo.
