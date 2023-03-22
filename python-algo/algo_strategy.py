@@ -45,6 +45,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.scored_on_locations = []
         self.opponent_left_x = [i for i in range(0, 14)]
         self.opponent_right_x = [i for i in range(13, 28)]
+        self.to_rebuild = []
 
     def on_turn(self, turn_state):
         """
@@ -71,18 +72,49 @@ class AlgoStrategy(gamelib.AlgoCore):
         right_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_right_x, None)
 
         # send interceptors on very first turn
+
+        for unit_type, unit_location in self.to_rebuild:
+            game_state.attempt_spawn(unit_type, unit_location)
+            self.to_rebuild.remove(unit_type, unit_location)
+
+
         if game_state.turn_number == 0:
             interceptor_locations = [[3, 10], [24, 10], [8, 5], [19, 5]]
             game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
 
-        if game_state.turn_number == 1:
-            if left_turrets >= right_turrets:
-                initial_walls = [[0, 13], [1, 13], [2, 13], [4, 13], [26, 13], [27, 13], [1, 12], [25, 11], [6, 10], [24, 10], [7, 9], [23, 9], [8, 8], [22, 8], [9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [18, 7], [19, 7], [20, 7], [21, 7], [17, 6]]
-            elif right_turrets > left_turrets:
-                initial_walls = [[0, 13], [1, 13], [23, 13], [25, 13], [26, 13], [27, 13], [1, 12], [26, 12], [2, 11], [3, 10], [21, 10], [4, 9], [20, 9], [5, 8], [19, 8], [6, 7], [7, 7], [8, 7], [9, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [10, 6]]
-            for wall_location in initial_walls:
+        if game_state.turn_number >= 1:
+            #if left_turrets >= right_turrets:
+            wall_locations = [[0, 13], [1, 13], [2, 13], [4, 13], [26, 13], [27, 13], [1, 12], [25, 11], [6, 10], [24, 10], [7, 9], [23, 9], [8, 8], [22, 8], [9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [18, 7], [19, 7], [20, 7], [21, 7], [17, 6]]
+            turret_locations = [
+            [3, 13], [3, 12], [5, 11], [26, 12], 
+            [5, 10], [3, 10]
+            ]
+            wall_upgrades = [[27, 13], [26, 13], [2, 13], [4, 13], [25, 11], [6, 10], [24, 10]]
+            #elif right_turrets > left_turrets:
+                #initial_walls = [[0, 13], [1, 13], [23, 13], [25, 13], [26, 13], [27, 13], [1, 12], [26, 12], [2, 11], [3, 10], [21, 10], [4, 9], [20, 9], [5, 8], [19, 8], [6, 7], [7, 7], [8, 7], [9, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [10, 6]]
+            for wall_location in wall_locations:
                 game_state.attempt_spawn(WALL, wall_location)
-        
+            for turret_location in turret_locations:
+                game_state.attempt_spawn(TURRET, turret_location)
+            for upgrade_locations in wall_upgrades:
+                game_state.attempt_upgrade(upgrade_locations)
+            wall_remove = [[1, 12], [1, 13], [0, 13]]
+
+            for wall_location in wall_remove:
+                game_state.attempt_remove(wall_location)
+
+            # finding damaged structures and rebuilding them next turn
+            for location in game_state.game_map:
+                if game_state.contains_stationary_unit(location):
+                    for unit in game_state.game_map[location]:
+                        if unit.player_index == 0:
+                            if unit.health != unit.max_health:
+                                game_state.attempt_remove(location)
+                                self.to_rebuild.append((unit.unit_type, location))
+
+
+            
+
         
         
 
