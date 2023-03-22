@@ -83,38 +83,67 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
 
         if game_state.turn_number >= 1:
+            # TODO: adjust which side base is facing based on opponent strong side
+            # TODO: split up the locations so code will only build/upgrade most important areas first
             #if left_turrets >= right_turrets:
+            #elif right_turrets > left_turrets:
+            #initial_walls = [[0, 13], [1, 13], [23, 13], [25, 13], [26, 13], [27, 13], [1, 12], [26, 12], [2, 11], [3, 10], [21, 10], [4, 9], [20, 9], [5, 8], [19, 8], [6, 7], [7, 7], [8, 7], [9, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [10, 6]]
+           
             wall_locations = [[0, 13], [1, 13], [2, 13], [4, 13], [26, 13], [27, 13], [1, 12], [25, 11], [6, 10], [24, 10], [7, 9], [23, 9], [8, 8], [22, 8], [9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [18, 7], [19, 7], [20, 7], [21, 7], [17, 6]]
             turret_locations = [
             [3, 13], [3, 12], [5, 11], [26, 12], 
             [5, 10], [3, 10]
             ]
             wall_upgrades = [[27, 13], [26, 13], [2, 13], [4, 13], [25, 11], [6, 10], [24, 10]]
-            #elif right_turrets > left_turrets:
-                #initial_walls = [[0, 13], [1, 13], [23, 13], [25, 13], [26, 13], [27, 13], [1, 12], [26, 12], [2, 11], [3, 10], [21, 10], [4, 9], [20, 9], [5, 8], [19, 8], [6, 7], [7, 7], [8, 7], [9, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [10, 6]]
-            for wall_location in wall_locations:
-                game_state.attempt_spawn(WALL, wall_location)
-            for turret_location in turret_locations:
-                game_state.attempt_spawn(TURRET, turret_location)
-            for upgrade_locations in wall_upgrades:
-                game_state.attempt_upgrade(upgrade_locations)
+
+            # game_state.attempt_spawn() takes as an arguement a single location or a list of locations
+            game_state.attempt_spawn(WALL, wall_locations)  
+            game_state.attempt_spawn(TURRET, turret_locations)
+            game_state.attempt_upgrade(wall_upgrades)
+            
             wall_remove = [[1, 12], [1, 13], [0, 13]]
+            game_state.attempt_remove(wall_remove)
 
-            for wall_location in wall_remove:
-                game_state.attempt_remove(wall_location)
+        # find and remove all damaged building so they can be rebuilt
+        self.remove_damaged(game_state) 
 
-            # finding damaged structures and rebuilding them next turn
-            for location in game_state.game_map:
-                if game_state.contains_stationary_unit(location):
-                    for unit in game_state.game_map[location]:
-                        if unit.player_index == 0:
-                            if math.ceil(unit.health) != math.ceil(unit.max_health):
-                                game_state.attempt_remove(location)
-                                self.to_rebuild.append((unit.unit_type, location))
+        max_demolishers = game_state.number_affordable(DEMOLISHER)
+        max_scouts = game_state.number_affordable(SCOUT)
 
+        # if opponent has a lot of MP (9), spawn an interceptor
+        if opponent_resources[1] >= 9:
+            game_state.attempt_spawn(INTERCEPTOR, (12, 1))
 
+        
 
 
+
+
+        # damages = []
+        # # Get the damage estimate each path will take
+        # for location in location_options:
+        #     path = game_state.find_path_to_edge(location)
+        #     damage = 0
+        #     for path_location in path:
+        #         # Get number of enemy turrets that can attack each location and multiply by turret damage
+        #         damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(TURRET, game_state.config).damage_i
+        #     damages.append(damage)
+        # return location_options[damages.index(min(damages))]
+    
+
+
+    def remove_damaged(self, game_state):
+        """
+        Find all damaged structural buildings and remove them, append the unit removed and location to be 
+        added back on next turn
+        """
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location):
+                for unit in game_state.game_map[location]:
+                    if unit.player_index == 0:
+                        if unit.health != unit.max_health:    # fix bug where upgraded unit always removed
+                            game_state.attempt_remove(location)
+                            self.to_rebuild.append((unit.unit_type, location))
             
 
         
