@@ -71,13 +71,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         left_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_left_x, None)
         right_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_right_x, None)
 
+        # if building were refunded previous round, rebuild them this round
+        if self.to_rebuild:
+            for unit_type, unit_location in self.to_rebuild:
+                game_state.attempt_spawn(unit_type, unit_location)
+                self.to_rebuild.remove((unit_type, unit_location))
+
         # send interceptors on very first turn
-
-        for unit_type, unit_location in self.to_rebuild:
-            game_state.attempt_spawn(unit_type, unit_location)
-            self.to_rebuild.remove(unit_type, unit_location)
-
-
         if game_state.turn_number == 0:
             interceptor_locations = [[3, 10], [24, 10], [8, 5], [19, 5]]
             game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
@@ -108,9 +108,11 @@ class AlgoStrategy(gamelib.AlgoCore):
                 if game_state.contains_stationary_unit(location):
                     for unit in game_state.game_map[location]:
                         if unit.player_index == 0:
-                            if unit.health != unit.max_health:
+                            if math.ceil(unit.health) != math.ceil(unit.max_health):
                                 game_state.attempt_remove(location)
                                 self.to_rebuild.append((unit.unit_type, location))
+
+
 
 
             
