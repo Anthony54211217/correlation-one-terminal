@@ -43,6 +43,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         SP = 0
         # This is a good place to do initial setup
         self.scored_on_locations = []
+        self.opponent_left_x = [i for i in range(0, 14)]
+        self.opponent_right_x = [i for i in range(13, 28)]
 
     def on_turn(self, turn_state):
         """
@@ -56,10 +58,33 @@ class AlgoStrategy(gamelib.AlgoCore):
         gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
 
-        self.starter_strategy(game_state)
-
+        # self.starter_strategy(game_state)
+        self.strategy(game_state)
         game_state.submit_turn()
 
+    def strategy(self, game_state):
+        # get information of player's SP & MP
+        my_resources = game_state.get_resources(player_index = 0)
+        opponent_resources = game_state.get_resources(player_index = 1)
+
+        left_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_left_x, None)
+        right_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_right_x, None)
+
+        # send interceptors on very first turn
+        if game_state.turn_number == 0:
+            interceptor_locations = [[3, 10], [24, 10], [8, 5], [19, 5]]
+            game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
+
+        if game_state.turn_number == 1:
+            if left_turrets >= right_turrets:
+                initial_walls = [[0, 13], [1, 13], [2, 13], [4, 13], [26, 13], [27, 13], [1, 12], [25, 11], [6, 10], [24, 10], [7, 9], [23, 9], [8, 8], [22, 8], [9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [18, 7], [19, 7], [20, 7], [21, 7], [17, 6]]
+            elif right_turrets > left_turrets:
+                initial_walls = [[0, 13], [1, 13], [23, 13], [25, 13], [26, 13], [27, 13], [1, 12], [26, 12], [2, 11], [3, 10], [21, 10], [4, 9], [20, 9], [5, 8], [19, 8], [6, 7], [7, 7], [8, 7], [9, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [10, 6]]
+            for wall_location in initial_walls:
+                game_state.attempt_spawn(WALL, wall_location)
+        
+        
+        
 
     """
     NOTE: All the methods after this point are part of the sample starter-algo
