@@ -49,16 +49,20 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.spawn_locaations = [[0, 13], [27, 13], [1, 12], [26, 12], [2, 11], [25, 11], [3, 10], [24, 10], [4, 9], [23, 9], [5, 8], [22, 8], [6, 7], [21, 7], [7, 6], [20, 6], [8, 5], [19, 5], [9, 4], [18, 4], [10, 3], [17, 3], [11, 2], [16, 2], [12, 1], [15, 1], [13, 0], [14, 0]]
         # list of structures/upgrades to build, will do so in order
         # so, put higher priority structures in front of list
-        self.base = [([1, 12], TURRET), ([24, 13], TURRET), ([24, 12], TURRET), ([22, 11], TURRET),
-                     ([22, 10], TURRET), ([0, 13], WALL), ([1, 13], WALL), ([2, 11], WALL), 
-                     ([3, 10], WALL), ([4, 9], WALL), ([5, 8], WALL), ([6, 7], WALL), 
-                     ([7, 7], WALL), ([8, 7], WALL), ([0, 13], WALL), ([9, 7], WALL), 
-                     ([10, 6], WALL), ([11, 7], WALL), ([12, 7], WALL), ([13, 7], WALL), 
-                     ([14, 7], WALL), ([15, 7], WALL), ([16, 7], WALL), ([17, 7], WALL), 
-                     ([18, 7], WALL), ([19, 8], WALL), ([20, 9], WALL), ([21, 10], WALL),
-                     ([23, 13], WALL), ([25, 13], WALL),
+        self.base = [([3, 12], TURRET), ([5, 11], TURRET), ([7, 10], TURRET), ([0, 13], WALL),
+                    ([0, 13], WALL), ([0, 13], "UPGRADE_WALL"), ([2, 13], WALL), ([2, 13], "UPGRADE_WALL"), 
+                    ([3, 13], WALL), ([3, 13], "UPGRADE_WALL"), ([4, 13], WALL), ([4, 13], "UPGRADE_WALL"),
+                    ([27, 13], WALL), ([27, 13], "UPGRADE_WALL"), ([26, 13], WALL), ([26, 13], "UPGRADE_WALL"),
+                    ([25, 13], WALL), ([25, 13], "UPGRADE_WALL"), ([24, 12], WALL), ([24, 12], "UPGRADE_WALL"),
+                    ([5, 12], WALL), ([5, 12], "UPGRADE_WALL"), ([7, 12], WALL), ([7, 12], "UPGRADE_WALL"),
+                    ([7, 11], WALL), ([7, 11], "UPGRADE_WALL"), ([8, 10], WALL), ([8, 10], "UPGRADE_WALL"),
+                    ([25, 11], WALL), ([24, 10], WALL), ([8, 9], WALL), ([9, 8], WALL), ([23, 9], WALL),
+                    ([22, 8], WALL), ([10, 7], WALL), ([11, 7], WALL), ([12, 7], WALL), ([13, 7], WALL),
+                    ([14, 7], WALL), ([15, 7], WALL), ([16, 7], WALL), ([17, 7], WALL), ([18, 7], WALL),
+                    ([19, 7], WALL), ([20, 7], WALL), ([21, 7], WALL)
                      ]
-        self.corner_walls = [[26, 12], [26, 13], [27, 13]]
+        
+        self.corner_walls = [[1, 13]]
 
     def on_turn(self, turn_state):
         """
@@ -85,9 +89,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         if opponent_resources[1] >= 9:
             game_state.attempt_spawn(INTERCEPTOR, [7, 6])
 
-        # spawn corner walls
-        game_state.attempt_spawn(WALL, self.corner_walls)
-
         # if building were refunded previous round, rebuild them this round
         if self.to_rebuild:
             for unit_type, unit_location in self.to_rebuild:
@@ -98,11 +99,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.remove_damaged(game_state) 
 
         # send interceptors on very first turn
-        if game_state.turn_number == 0:
-            interceptor_locations = [[3, 10], [24, 10], [8, 5], [19, 5]]
+        if game_state.turn_number <= 2:
+            interceptor_locations = [[5, 19], [22, 19]]
             game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
 
-        if game_state.turn_number >= 1:
+        elif game_state.turn_number >= 3:
             # TODO: adjust which side base is facing based on opponent strong side
             # TODO: split up the locations so code will only build/upgrade most important areas first
             # TODO: logic decide on when demolishers/scouts are spawned
@@ -112,17 +113,32 @@ class AlgoStrategy(gamelib.AlgoCore):
             #elif right_turrets > left_turrets:
             #initial_walls = [[0, 13], [1, 13], [23, 13], [25, 13], [26, 13], [27, 13], [1, 12], [26, 12], [2, 11], [3, 10], [21, 10], [4, 9], [20, 9], [5, 8], [19, 8], [6, 7], [7, 7], [8, 7], [9, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [10, 6]]
            
-            for location, structure in self.base:
-                if structure != "UPGRADE":
-                    game_state.attempt_spawn(structure, location)
+            # spawn corner walls
+            game_state.attempt_spawn(WALL, self.corner_walls)
 
             # remove corner walls to allow us to attack corner if we choose to
             game_state.attempt_remove(self.corner_walls)
 
+            for location, structure in self.base:
+                # get information of player's SP & MP
+                my_resources = game_state.get_resources(player_index = 0)
+                opponent_resources = game_state.get_resources(player_index = 1)
+
+                # if we don't have enough resources to spawn what is on the priority list, return and wait for more resources
+                if structure == TURRET and my_resources[0] < 6:
+                    return
+                elif structure == "UPGRADE_WALL" and my_resources[0] < 1.5:
+                    return
+                if (structure != "UPGRADE_WALL"):
+                    game_state.attempt_spawn(structure, location)
+                else:
+                    game_state.attempt_upgrade(location)
+                
+
             # find all not blocked mobile unit spawn locations
-            spawn_filtered = self.filter_blocked_locations(self.spawn_locaations, game_state)
-            max_demolishers = game_state.number_affordable(DEMOLISHER)
-            max_scouts = game_state.number_affordable(SCOUT)
+            # spawn_filtered = self.filter_blocked_locations(self.spawn_locaations, game_state)
+            # max_demolishers = game_state.number_affordable(DEMOLISHER)
+            # max_scouts = game_state.number_affordable(SCOUT)
             # for spawn_location in spawn_filtered:
             #     path = game_state.find_path_to_edge(spawn_location)
             #     for path_location in path:
@@ -143,11 +159,11 @@ class AlgoStrategy(gamelib.AlgoCore):
                                     game_state.attempt_remove(location)
                                     self.to_rebuild.append((unit.unit_type, location))
                             elif unit.upgraded:
-                                if unit.health < 114: 
+                                if unit.health < 60: 
                                     game_state.attempt_remove(location)
                                     self.to_rebuild.append((unit.unit_type, location))
                         elif unit.unit_type == TURRET:
-                            if unit.health < 72:    
+                            if unit.health < 30:    
                                 game_state.attempt_remove(location)
                                 self.to_rebuild.append((unit.unit_type, location))
                                     
