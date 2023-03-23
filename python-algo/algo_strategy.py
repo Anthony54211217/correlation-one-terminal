@@ -56,12 +56,12 @@ class AlgoStrategy(gamelib.AlgoCore):
                     ([25, 13], WALL), ([25, 13], "UPGRADE_WALL"), ([24, 12], WALL), ([24, 12], "UPGRADE_WALL"),
                     ([5, 12], WALL), ([5, 12], "UPGRADE_WALL"), ([7, 12], WALL), ([7, 12], "UPGRADE_WALL"),
                     ([7, 11], WALL), ([7, 11], "UPGRADE_WALL"), ([8, 10], WALL), ([8, 10], "UPGRADE_WALL"),
-                    ([25, 11], WALL), ([24, 10], WALL), ([8, 9], WALL), ([9, 8], WALL), ([23, 9], WALL),
+                    ([24, 11], WALL), ([24, 10], WALL), ([8, 9], WALL), ([9, 8], WALL), ([23, 9], WALL),
                     ([22, 8], WALL), ([10, 7], WALL), ([11, 7], WALL), ([12, 7], WALL), ([13, 7], WALL),
                     ([14, 7], WALL), ([15, 7], WALL), ([16, 7], WALL), ([17, 7], WALL), ([18, 7], WALL),
-                    ([19, 7], WALL), ([20, 7], WALL), ([21, 7], WALL)
+                    ([19, 7], WALL), ([20, 7], WALL), ([21, 7], WALL), ([25, 12], TURRET), ([4, 12], TURRET),
+                    ([26, 12], TURRET), ([11, 6], SUPPORT), ([12, 6], SUPPORT)
                      ]
-        
         self.corner_walls = [[1, 13]]
 
     def on_turn(self, turn_state):
@@ -86,8 +86,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         opponent_resources = game_state.get_resources(player_index = 1)
 
         # if opponent has a lot of MP (9), spawn an interceptor
-        if opponent_resources[1] >= 9:
-            game_state.attempt_spawn(INTERCEPTOR, [7, 6])
+        if opponent_resources[1] >= 15:
+            # need logic to decide which side to spawn interceptor to self-destruct on
+            game_state.attempt_spawn(INTERCEPTOR, [25, 11])
+            interceptor_trap = [[3, 11], [2, 12]]
+            # spawn walls to trap interceptor so it will self destruct to defend
+            game_state.attempt_spawn(WALL, interceptor_trap)
+            game_state.attempt_remove(interceptor_trap)
+            game_state.attempt_spawn(INTERCEPTOR, [2, 11])
 
         # if building were refunded previous round, rebuild them this round
         if self.to_rebuild:
@@ -98,7 +104,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         # find and remove all damaged building so they can be rebuilt
         self.remove_damaged(game_state) 
 
-        # send interceptors on very first turn
+        # send interceptors on first 2 turns to build up SP to have full base built
         if game_state.turn_number <= 2:
             interceptor_locations = [[5, 19], [22, 19]]
             game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
