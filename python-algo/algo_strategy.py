@@ -67,10 +67,16 @@ class AlgoStrategy(gamelib.AlgoCore):
                     ([4, 11], SUPPORT), ([4, 11], "UPGRADE_SUPPORT"), ([7, 9], SUPPORT),
                     ([7, 9], "UPGRADE_SUPPORT"), ([8, 8], SUPPORT), ([8, 8], "UPGRADE_SUPPORT"),
                     ([4, 12], "UPGRADE_TURRET"), ([26, 12], "UPGRADE_TURRET"), ([7, 8], SUPPORT),
-                    ([7, 8], "UPGRADE_SUPPORT"), ([9, 7], SUPPORT), ([8, 7], SUPPORT), ([9, 6], SUPPORT)
+                    ([7, 8], "UPGRADE_SUPPORT"), ([9, 7], SUPPORT), ([8, 7], SUPPORT), ([9, 6], SUPPORT),
+                    ([5, 10], SUPPORT), ([5, 10], "UPGRADE_SUPPORT")
                      ]
         # corner wall that will be continuously built and rebuilt
         self.corner_walls = [[1, 13]]
+        self.avoid_interceptor_walls = [[14, 1], [14, 3], [13, 3], [12, 2], 
+                                  [15, 3], [16, 4], [17, 5], [11, 4], 
+                                  [12, 5], [13, 5], [14, 5], [15, 6]
+                                  ]
+        self.avoid_interceptor_path = False
 
     def on_turn(self, turn_state):
         """
@@ -98,6 +104,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_spawn(DEMOLISHER, [13, 0], 5)
             game_state.attempt_spawn(WALL, [6, 11])
             game_state.attempt_remove([6, 11])
+            if self.avoid_interceptor_path:
+                game_state.attempt_spawn(WALL, self.avoid_interceptor_walls)
         else:
             if game_state.turn_number >= 3:
                 # spawn corner walls
@@ -359,17 +367,26 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         # Let's record at what position we get scored on
         state = json.loads(turn_string)
+        # events = state["events"]
+        # breaches = events["breach"]
+        # for breach in breaches:
+        #     location = breach[0]
+        #     unit_owner_self = True if breach[4] == 1 else False
+        #     # When parsing the frame data directly, 
+        #     # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
+        #     if not unit_owner_self:
+        #         gamelib.debug_write("Got scored on at: {}".format(location))
+        #         self.scored_on_locations.append(location)
+        #         gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
         events = state["events"]
-        breaches = events["breach"]
-        for breach in breaches:
-            location = breach[0]
-            unit_owner_self = True if breach[4] == 1 else False
-            # When parsing the frame data directly, 
-            # 1 is integer for yourself, 2 is opponent (StarterKit code uses 0, 1 as player_index instead)
-            if not unit_owner_self:
-                gamelib.debug_write("Got scored on at: {}".format(location))
-                self.scored_on_locations.append(location)
-                gamelib.debug_write("All locations: {}".format(self.scored_on_locations))
+        self_destructs = events["selfDestruct"]
+        for self_destruct in self_destructs:
+            location = self_destruct[0]
+            unit_owner_self = True if self_destruct[5] == 1 else False
+            if not unit_owner_self: # unit that self destructed was owned by the opponent
+                if self_destruct[3] == 5:   # unit that self destructed was an interceptor
+                    if self_destruct[2] >= 40:
+                        self.avoid_interceptor_path = True
 
 
 if __name__ == "__main__":
