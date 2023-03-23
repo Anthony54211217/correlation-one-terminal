@@ -60,7 +60,9 @@ class AlgoStrategy(gamelib.AlgoCore):
                     ([22, 8], WALL), ([10, 7], WALL), ([11, 7], WALL), ([12, 7], WALL), ([13, 7], WALL),
                     ([14, 7], WALL), ([15, 7], WALL), ([16, 7], WALL), ([17, 7], WALL), ([18, 7], WALL),
                     ([19, 7], WALL), ([20, 7], WALL), ([21, 7], WALL), ([25, 12], TURRET), ([4, 12], TURRET),
-                    ([26, 12], TURRET), ([11, 6], SUPPORT), ([12, 6], SUPPORT)
+                    ([26, 12], TURRET), ([11, 6], SUPPORT), ([12, 6], SUPPORT), ([10, 6], SUPPORT), 
+                    ([11, 5], SUPPORT), ([4, 11], SUPPORT), ([4, 11], "UPGRADE_SUPPORT"), ([7, 9], SUPPORT),
+                    ([7, 9], "UPGRADE_SUPPORT"), ([8, 8], SUPPORT), ([8, 8], "UPGRADE_SUPPORT"),
                      ]
         self.corner_walls = [[1, 13]]
 
@@ -94,6 +96,11 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_spawn(WALL, interceptor_trap)
             game_state.attempt_remove(interceptor_trap)
             game_state.attempt_spawn(INTERCEPTOR, [2, 11])
+
+        my_resources = game_state.get_resources(player_index = 0)
+        opponent_resources = game_state.get_resources(player_index = 1)
+        if my_resources[1] >= 15:
+            game_state.attempt_spawn(DEMOLISHER, [13, 0], 5)
 
         # if building were refunded previous round, rebuild them this round
         if self.to_rebuild:
