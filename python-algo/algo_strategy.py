@@ -113,7 +113,7 @@ class AlgoStrategy(gamelib.AlgoCore):
 
         # send interceptors on first 2 turns to build up SP to have full base built
         if game_state.turn_number <= 2:
-            interceptor_locations = [[5, 19], [22, 19]]
+            interceptor_locations = [[5, 8], [22, 8]]
             game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
 
         elif game_state.turn_number >= 3:
