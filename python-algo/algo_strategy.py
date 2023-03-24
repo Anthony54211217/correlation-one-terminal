@@ -42,45 +42,124 @@ class AlgoStrategy(gamelib.AlgoCore):
         MP = 1
         SP = 0
         # This is a good place to do initial setup
-        self.scored_on_locations = []
+        # self.scored_on_locations = []
         self.opponent_left_x = [i for i in range(0, 14)]
         self.opponent_right_x = [i for i in range(13, 28)]
         # list to store structures that were removed in the previous round that need to be rebuilt
         self.to_rebuild = []
         # all possible spawn locations for mobile units
         self.spawn_locaations = [[0, 13], [27, 13], [1, 12], [26, 12], [2, 11], [25, 11], [3, 10], [24, 10], [4, 9], [23, 9], [5, 8], [22, 8], [6, 7], [21, 7], [7, 6], [20, 6], [8, 5], [19, 5], [9, 4], [18, 4], [10, 3], [17, 3], [11, 2], [16, 2], [12, 1], [15, 1], [13, 0], [14, 0]]
-        # list of structures/upgrades to build: will do so in order, so, put higher priority structures in front of list
-        self.base = [([3, 12], TURRET), ([5, 11], TURRET), ([7, 10], TURRET), ([0, 13], WALL),
-                    ([0, 13], WALL), ([0, 13], "UPGRADE_WALL"), ([2, 13], WALL), ([2, 13], "UPGRADE_WALL"), 
-                    ([3, 13], WALL), ([3, 13], "UPGRADE_WALL"), ([4, 13], WALL), ([4, 13], "UPGRADE_WALL"),
-                    ([27, 13], WALL), ([27, 13], "UPGRADE_WALL"), ([26, 13], WALL), ([26, 13], "UPGRADE_WALL"),
-                    ([25, 13], WALL), ([25, 13], "UPGRADE_WALL"), ([24, 12], WALL), ([24, 12], "UPGRADE_WALL"),
-                    ([5, 12], WALL), ([5, 12], "UPGRADE_WALL"), ([7, 12], WALL), ([7, 12], "UPGRADE_WALL"),
-                    ([7, 11], WALL), ([7, 11], "UPGRADE_WALL"), ([8, 10], WALL), ([8, 10], "UPGRADE_WALL"),
-                    ([25, 11], WALL), ([24, 10], WALL), ([8, 9], WALL), ([9, 8], WALL), ([23, 9], WALL),
-                    ([22, 8], WALL), ([10, 7], WALL), ([11, 7], WALL), ([12, 7], WALL), ([13, 7], WALL),
-                    ([14, 7], WALL), ([15, 7], WALL), ([16, 7], WALL), ([17, 7], WALL), ([18, 7], WALL),
-                    ([19, 7], WALL), ([20, 7], WALL), ([21, 7], WALL), ([25, 12], TURRET), ([4, 12], TURRET),
-                    ([26, 12], TURRET), ([11, 6], SUPPORT), ([12, 6], SUPPORT), ([10, 6], SUPPORT), 
-                    ([11, 5], SUPPORT), ([3, 12], "UPGRADE_TURRET"), ([25, 12], "UPGRADE_TURRET"),
-                    ([7, 10], "UPGRADE_TURRET"), ([5, 11], "UPGRADE_TURRET"), 
-                    ([4, 11], SUPPORT), ([4, 11], "UPGRADE_SUPPORT"), ([7, 9], SUPPORT),
-                    ([7, 9], "UPGRADE_SUPPORT"), ([8, 8], SUPPORT), ([8, 8], "UPGRADE_SUPPORT"),
-                    ([4, 12], "UPGRADE_TURRET"), ([26, 12], "UPGRADE_TURRET"), ([7, 8], SUPPORT),
-                    ([7, 8], "UPGRADE_SUPPORT"), ([9, 7], SUPPORT), ([8, 7], SUPPORT), ([9, 6], SUPPORT),
-                    ([5, 10], SUPPORT), ([5, 10], "UPGRADE_SUPPORT")
-                     ]
-        # corner wall that will be continuously built and rebuilt
-        self.corner_walls = [[1, 13]]
-        self.avoid_interceptor_walls = [[14, 1], [14, 3], [13, 3], [12, 2], 
-                                  [15, 3], [16, 4], [17, 5], [11, 4], 
-                                  [12, 5], [13, 5], [14, 5], [15, 6]
-                                  ]
+        # list of structures/upgrades to build: will do so in order, so, put higher priority structures in front of list, left-handed
+        self.base_l = [([3, 12], TURRET), 
+                       ([5, 11], TURRET), 
+                       ([7, 10], TURRET), 
+                       ([0, 13], WALL), ([0, 13], "UPGRADE_WALL"), 
+                       ([2, 13], WALL), ([2, 13], "UPGRADE_WALL"), 
+                       ([3, 13], WALL), ([3, 13], "UPGRADE_WALL"), 
+                       ([4, 13], WALL), ([4, 13], "UPGRADE_WALL"),
+                       ([27, 13], WALL), ([27, 13], "UPGRADE_WALL"), 
+                       ([26, 13], WALL), ([26, 13], "UPGRADE_WALL"),
+                       ([25, 13], WALL), ([25, 13], "UPGRADE_WALL"), 
+                       ([24, 12], WALL), ([24, 12], "UPGRADE_WALL"),
+                       ([5, 12], WALL), ([5, 12], "UPGRADE_WALL"), 
+                       ([7, 12], WALL), ([7, 12], "UPGRADE_WALL"),
+                       ([7, 11], WALL), ([7, 11], "UPGRADE_WALL"), 
+                       ([8, 10], WALL), ([8, 10], "UPGRADE_WALL"),
+                       ([25, 11], WALL), 
+                       ([24, 10], WALL), 
+                       ([8, 9], WALL), 
+                       ([9, 8], WALL), 
+                       ([23, 9], WALL),
+                       ([22, 8], WALL), 
+                       ([10, 7], WALL), 
+                       ([11, 7], WALL), 
+                       ([12, 7], WALL), 
+                       ([13, 7], WALL),
+                       ([14, 7], WALL), 
+                       ([15, 7], WALL), 
+                       ([16, 7], WALL), 
+                       ([17, 7], WALL), 
+                       ([18, 7], WALL),
+                       ([19, 7], WALL), 
+                       ([20, 7], WALL), 
+                       ([21, 7], WALL), 
+                       ([25, 12], TURRET), 
+                       ([4, 12], TURRET),
+                       ([26, 12], TURRET), 
+                       ([11, 6], SUPPORT), 
+                       ([12, 6], SUPPORT), 
+                       ([10, 6], SUPPORT), 
+                       ([11, 5], SUPPORT), 
+                       ([3, 12], "UPGRADE_TURRET"), 
+                       ([25, 12], "UPGRADE_TURRET"),
+                       ([7, 10], "UPGRADE_TURRET"), 
+                       ([5, 11], "UPGRADE_TURRET"), 
+                       ([4, 11], SUPPORT), ([4, 11], "UPGRADE_SUPPORT"), 
+                       ([7, 9], SUPPORT),([7, 9], "UPGRADE_SUPPORT"), 
+                       ([8, 8], SUPPORT), ([8, 8], "UPGRADE_SUPPORT"),
+                       ([4, 12], "UPGRADE_TURRET"), 
+                       ([26, 12], "UPGRADE_TURRET"), 
+                       ([7, 8], SUPPORT),([7, 8], "UPGRADE_SUPPORT"), 
+                       ([9, 7], SUPPORT), 
+                       ([8, 7], SUPPORT), 
+                       ([9, 6], SUPPORT),
+                       ([5, 10], SUPPORT), ([5, 10], "UPGRADE_SUPPORT")
+        ]
+        # corner wall that will be continuously built and rebuilt, left-handed
+        self.corner_walls_l = [[1, 13]]
+        # potential additional walls to extend mobile unit path to avoid self-destructing interceptors
+        self.avoid_interceptor_walls_l = [[14, 1], 
+                                          [14, 3], 
+                                          [13, 3], 
+                                          [12, 2], 
+                                          [15, 3], 
+                                          [16, 4], 
+                                          [17, 5], 
+                                          [11, 4], 
+                                          [12, 5], 
+                                          [13, 5], 
+                                          [14, 5], 
+                                          [15, 6]
+        ]
+        # potential walls to trap in an interceptor to self-destruct
+        self.interceptor_trap_l = [[3, 11], [2, 12]]
+        # interceptor self-destruct trap spawn location
+        self.interceptor_trap_spawn_l = [2, 11]
+        # x-coordinates of area of opponent's area to calculate their "defensive score"
+        self.count_enemy_unit_x_l = [0, 1, 2, 3, 4, 5]
+        # y-coordinates of area of opponent's area to calculate their "defensive score"
+        self.count_enemy_unit_y_l = [14, 15, 16, 17, 18, 19]
+
+        # the follow "base" is the same layout but reflected on the y-axis
+        self.base_r = []
+        for location, structure in self.base_l:
+            self.base_r.append((27 - location[0], location[1]), structure)
+        # corner wall that will be continously built and rebuilt, right-handed
+        self.corner_walls_r = [[26, 13]]
+        # potential additional walls to extend mobile unit path to avoid self-destructing interceptors
+        self.avoid_interceptor_walls_r = [[13, 1], 
+                                          [13, 3], 
+                                          [14, 3], 
+                                          [15, 2], 
+                                          [12, 3], 
+                                          [11, 4], 
+                                          [10, 5], 
+                                          [16, 4], 
+                                          [15, 5], 
+                                          [14, 5], 
+                                          [13, 5], 
+                                          [12, 6]
+        ]
+        # potential walls to trap in an interceptor to self-destruct
+        self.interceptor_trap_r = [[24, 11], [25, 12]]
+        # interceptor self-destruct trap spawn location
+        self.interceptor_trap_spawn_r = [25, 11]
+        # boolean to decide if algo should add walls to extend path for our own mobile units
         self.avoid_interceptor_path = False
-        self.interceptor_trap = [[3, 11], [2, 12]]
-        self.interceptor_trap_spawn = [2, 11]
-        self.count_enemy_unit_x = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        self.count_enemy_unit_y = [14, 15, 16, 17, 18, 19, 20, 21, 22]
+        # x-coordinates of area of opponent's area to calculate their "defensive score"
+        self.count_enemy_unit_x_l = [27, 26, 25, 24, 23, 22]
+        # y-coordinates of area of opponent's area to calculate their "defensive score"
+        self.count_enemy_unit_y_l = [14, 15, 16, 17, 18, 19]
 
     def on_turn(self, turn_state):
         """
@@ -105,7 +184,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.interceptor_trap = [[3, 11], [2, 12]]
             self.interceptor_trap_spawn = [2, 11]
         else:
-            self.avoid_interceptor_path = True
+            #self.avoid_interceptor_path = True turning this off for now
             self.interceptor_trap = [[4, 10], [2, 12]]
             self.interceptor_trap_spawn = [3, 10]
 
