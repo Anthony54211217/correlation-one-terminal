@@ -44,6 +44,191 @@ class AlgoStrategy(gamelib.AlgoCore):
         # This is a good place to do initial setup
         self.scored_on_locations = []
 
+        global BREAKPOINT
+        BREAKPOINT = 'BREAKPOINT'
+        self.base = (
+            # First turrets
+            (TURRET, [1, 12]),
+            (TURRET, [26, 12]),
+            (TURRET, [8, 10]),
+            (TURRET, [19, 10]),
+
+            # First walls
+            (WALL, [0, 13]),
+            (WALL, [1, 13]),
+            (WALL, [2, 13]),
+            (WALL, [2, 12]),
+            (WALL, [2, 11]),
+            (WALL, [3, 10]),
+            (WALL, [4, 9]),
+            (WALL, [5, 10]),
+            (WALL, [27, 13]),
+            (WALL, [26, 13]),
+            (WALL, [25, 13]),
+            (WALL, [25, 12]),
+            (WALL, [25, 11]),
+            (WALL, [24, 10]),
+            (WALL, [23, 9]),
+            (WALL, [22, 10]),
+            (WALL, [7, 10]),
+            (WALL, [9, 10]),
+            (WALL, [9, 9]),
+            (WALL, [9, 8]),
+            (WALL, [10, 7]),
+            (WALL, [11, 6]),
+            (WALL, [12, 5]),
+            (WALL, [13, 4]),
+            (WALL, [20, 10]),
+            (WALL, [18, 10]),
+            (WALL, [18, 9]),
+            (WALL, [18, 8]),
+            (WALL, [17, 7]),
+            (WALL, [16, 6]),
+            (WALL, [15, 5]),
+            (WALL, [14, 4]),
+
+            # Second turrets
+            (BREAKPOINT, 6),
+            (TURRET, [5, 9]),
+            (BREAKPOINT, 6),
+            (TURRET, [22, 9]),
+
+            # Second walls
+            (WALL, [7, 11]),
+            (WALL, [8, 11]),
+            (WALL, [9, 11]),
+            (WALL, [18, 11]),
+            (WALL, [19, 11]),
+            (WALL, [20, 11]),
+
+            # Third turrets
+            (BREAKPOINT, 6),
+            (TURRET, [7, 9]),
+            (BREAKPOINT, 6),
+            (TURRET, [20, 9]),
+            (BREAKPOINT, 6),
+            (TURRET, [22, 8]),
+            (BREAKPOINT, 6),
+            (TURRET, [5, 8]),
+            (BREAKPOINT, 6),
+            (TURRET, [8, 9]),
+            (BREAKPOINT, 6),
+            (TURRET, [19, 9]),
+            (BREAKPOINT, 6),
+            (TURRET, [19, 8]),
+            (BREAKPOINT, 6),
+            (TURRET, [8, 8]),
+
+            # First wall upgrades
+            (None, [0, 13]),
+            (None, [1, 13]),
+            (None, [2, 13]),
+            (None, [27, 13]),
+            (None, [26, 13]),
+            (None, [25, 13]),
+            (None, [7, 11]),
+            (None, [8, 11]),
+            (None, [9, 11]),
+            (None, [5, 10]),
+            (None, [18, 11]),
+            (None, [19, 11]),
+            (None, [20, 11]),
+            (None, [22, 10]),
+            (None, [7, 10]),
+            (None, [9, 10]),
+            (None, [18, 10]),
+            (None, [20, 10]),
+            (None, [2, 12]),
+            (None, [25, 12]),
+
+            # First supports
+            (SUPPORT, [13, 2]),
+            (SUPPORT, [14, 2]),
+
+            # Second supports
+            (SUPPORT, [12, 3]),
+            (SUPPORT, [15, 3]),
+            (SUPPORT, [11, 4]),
+            (SUPPORT, [16, 4]),
+
+            # Third walls
+            (WALL, [4, 11]),
+            (WALL, [23, 11]),
+
+            # Third wall upgrades
+            (None, [4, 11]),
+            (None, [23, 11]),
+
+            # Fourth turrets
+            (BREAKPOINT, 6),
+            (TURRET, [4, 10]),
+            (BREAKPOINT, 6),
+            (TURRET, [23, 10]),
+            (BREAKPOINT, 6),
+            (TURRET, [6, 7]),
+            (BREAKPOINT, 6),
+            (TURRET, [21, 7]),
+            (BREAKPOINT, 6),
+            (TURRET, [18, 7]),
+            (BREAKPOINT, 6),
+            (TURRET, [9, 7]),
+            (BREAKPOINT, 6),
+            (TURRET, [10, 6]),
+            (BREAKPOINT, 6),
+            (TURRET, [17, 6]),
+            (BREAKPOINT, 6),
+            (TURRET, [20, 6]),
+            (BREAKPOINT, 6),
+            (TURRET, [7, 6]),
+        )
+        self.rebuild_thresholds = {
+            WALL: 0.75,
+            TURRET: 0.5,
+        }
+        self.attacks = (
+            (
+                (WALL, [21, 10], 1),
+                (WALL, [6, 12], 1),
+                (WALL, [5, 13], 1),
+                (WALL, [4, 13], 1),
+                (DEMOLISHER, [17, 3], 2),
+                (SCOUT, [19, 5], 1000),
+            ),
+            (
+                (WALL, [6, 10], 1),
+                (WALL, [21, 12], 1),
+                (WALL, [22, 13], 1),
+                (WALL, [23, 13], 1),
+                (DEMOLISHER, [10, 3], 2),
+                (SCOUT, [8, 5], 1000),
+            ),
+            (
+                (WALL, [21, 10], 1),
+                (WALL, [4, 11], 1),
+                (WALL, [5, 12], 1),
+                (WALL, [6, 13], 1),
+                (WALL, [7, 13], 1),
+                (WALL, [8, 13], 1),
+                (WALL, [9, 13], 1),
+                (DEMOLISHER, [17, 3], 2),
+                (SCOUT, [19, 5], 1000),
+            ),
+            (
+                (WALL, [6, 10], 1),
+                (WALL, [23, 11], 1),
+                (WALL, [22, 12], 1),
+                (WALL, [21, 13], 1),
+                (WALL, [20, 13], 1),
+                (WALL, [19, 13], 1),
+                (WALL, [18, 13], 1),
+                (DEMOLISHER, [10, 3], 2),
+                (SCOUT, [8, 5], 1000),
+            ),
+        )
+        self.attack_period = 7
+        self.attack_delay = 3
+        self.attack_mp_threshold = 9
+
     def on_turn(self, turn_state):
         """
         This function is called every turn with the game state wrapper as
@@ -73,52 +258,85 @@ class AlgoStrategy(gamelib.AlgoCore):
         For offense we will use long range demolishers if they place stationary units near the enemy's front.
         If there are no stationary units to attack in the front, we will send Scouts to try and score quickly.
         """
-        # First, place basic defenses
-        self.build_defences(game_state)
-        # Now build reactive defenses based on where the enemy scored
-        self.build_reactive_defense(game_state)
+        self.defend(game_state)
+        self.attack(game_state)
 
-        # If the turn is less than 5, stall with interceptors and wait to see enemy's base
-        if game_state.turn_number < 5:
-            self.stall_with_interceptors(game_state)
-        else:
-            # Now let's analyze the enemy base to see where their defenses are concentrated.
-            # If they have many units in the front we can build a line for our demolishers to attack them at long range.
-            if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
-                self.demolisher_line_strategy(game_state)
+        # # Now build reactive defenses based on where the enemy scored
+        # self.build_reactive_defense(game_state)
+
+        # # If the turn is less than 5, stall with interceptors and wait to see enemy's base
+        # if game_state.turn_number < 5:
+        #     self.stall_with_interceptors(game_state)
+        # else:
+        #     # Now let's analyze the enemy base to see where their defenses are concentrated.
+        #     # If they have many units in the front we can build a line for our demolishers to attack them at long range.
+        #     if self.detect_enemy_unit(game_state, unit_type=None, valid_x=None, valid_y=[14, 15]) > 10:
+        #         self.demolisher_line_strategy(game_state)
+        #     else:
+        #         # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
+
+        #         # Only spawn Scouts every other turn
+        #         # Sending more at once is better since attacks can only hit a single scout at a time
+        #         if game_state.turn_number % 2 == 1:
+        #             # To simplify we will just check sending them from back left and right
+        #             scout_spawn_location_options = [[13, 0], [14, 0]]
+        #             best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
+        #             game_state.attempt_spawn(SCOUT, best_location, 1000)
+
+        #         # Lastly, if we have spare SP, let's build some supports
+        #         support_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
+        #         game_state.attempt_spawn(SUPPORT, support_locations)
+
+    def defend(self, game_state):
+        for shorthand, location in self.base:
+            if shorthand != BREAKPOINT \
+                    and shorthand in self.rebuild_thresholds \
+                    and game_state.contains_stationary_unit(location):
+                threshold = self.rebuild_thresholds[shorthand]
+
+                for unit in game_state.game_map[location]:
+                    if not unit.player_index and unit.unit_type == shorthand \
+                            and unit.health < threshold * unit.max_health:
+                        game_state.attempt_remove(location)
+
+        for shorthand, location in self.base:
+            if shorthand is None:
+                game_state.attempt_upgrade(location)
+            elif shorthand == BREAKPOINT:
+                if game_state.get_resource(SP) < location:
+                    break
             else:
-                # They don't have many units in the front so lets figure out their least defended area and send Scouts there.
+                game_state.attempt_spawn(shorthand, location)
 
-                # Only spawn Scouts every other turn
-                # Sending more at once is better since attacks can only hit a single scout at a time
-                if game_state.turn_number % 2 == 1:
-                    # To simplify we will just check sending them from back left and right
-                    scout_spawn_location_options = [[13, 0], [14, 0]]
-                    best_location = self.least_damage_spawn_location(game_state, scout_spawn_location_options)
-                    game_state.attempt_spawn(SCOUT, best_location, 1000)
+    def attack(self, game_state):
+        if game_state.turn_number >= self.attack_delay:
+            index = (game_state.turn_number - self.attack_delay) \
+                // self.attack_period \
+                % len(self.attacks)
+            modulus = (game_state.turn_number - self.attack_delay) \
+                % self.attack_period
+            wall_locations = []
 
-                # Lastly, if we have spare SP, let's build some supports
-                support_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
-                game_state.attempt_spawn(SUPPORT, support_locations)
+            for i, attack in enumerate(self.attacks):
+                if i == index:
+                    for shorthand, location, count in attack:
+                        if modulus and (game_state.get_resource(MP) \
+                                >= self.attack_mp_threshold or shorthand == WALL):
+                            game_state.attempt_spawn(
+                                shorthand,
+                                location,
+                                count,
+                            )
 
-    def build_defences(self, game_state):
-        """
-        Build basic defenses using hardcoded locations.
-        Remember to defend corners and avoid placing units in the front where enemy demolishers can attack them.
-        """
-        # Useful tool for setting up your base locations: https://www.kevinbai.design/terminal-map-maker
-        # More community tools available at: https://terminal.c1games.com/rules#Download
-
-        # Place turrets that attack enemy units
-        turret_locations = [[0, 13], [27, 13], [8, 11], [19, 11], [13, 11], [14, 11]]
-        # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
-        game_state.attempt_spawn(TURRET, turret_locations)
-        
-        # Place walls in front of turrets to soak up damage for them
-        wall_locations = [[8, 12], [19, 12]]
-        game_state.attempt_spawn(WALL, wall_locations)
-        # upgrade walls so they soak more damage
-        game_state.attempt_upgrade(wall_locations)
+                        if shorthand == WALL:
+                            wall_locations.append(location)
+                
+            for i, attack in enumerate(self.attacks):
+                if i != index:
+                    for shorthand, location, count in attack:
+                        if shorthand == WALL \
+                                and location not in wall_locations:
+                            game_state.attempt_remove(location)
 
     def build_reactive_defense(self, game_state):
         """
