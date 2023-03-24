@@ -122,18 +122,26 @@ class AlgoStrategy(gamelib.AlgoCore):
                                           [15, 6]
         ]
         # potential walls to trap in an interceptor to self-destruct
-        self.interceptor_trap_l = [[3, 11], [2, 12]]
-        # interceptor self-destruct trap spawn location
-        self.interceptor_trap_spawn_l = [2, 11]
+        self.interceptor_trap_short_l = [[3, 11], [2, 12]]
+        # interceptor self-destruct trap spawn location, for a short (4 frames) "fuse"
+        self.interceptor_trap_spawn_short_l = [2, 11]
+        # potential walls to trap in an interceptor to self-destruct
+        self.interceptor_trap_long_l = [[4, 10], [2, 12]]
+        # interceptor self-destruct trap spawn location, for a long (8 frames) "fuse"
+        self.interceptor_trap_spawn_long_l = [3, 10]
         # x-coordinates of area of opponent's area to calculate their "defensive score"
         self.count_enemy_unit_x_l = [0, 1, 2, 3, 4, 5]
         # y-coordinates of area of opponent's area to calculate their "defensive score"
         self.count_enemy_unit_y_l = [14, 15, 16, 17, 18, 19]
 
+        self.demolisher_spawn_l = [13, 0]
+        self.scout_spawn_l = [14, 0]
+        self.attack_wall_l = [6, 11]
+
         # the follow "base" is the same layout but reflected on the y-axis
         self.base_r = []
         for location, structure in self.base_l:
-            self.base_r.append((27 - location[0], location[1]), structure)
+            self.base_r.append(([27 - location[0], location[1]], structure))
         # corner wall that will be continously built and rebuilt, right-handed
         self.corner_walls_r = [[26, 13]]
         # potential additional walls to extend mobile unit path to avoid self-destructing interceptors
@@ -151,15 +159,49 @@ class AlgoStrategy(gamelib.AlgoCore):
                                           [12, 6]
         ]
         # potential walls to trap in an interceptor to self-destruct
-        self.interceptor_trap_r = [[24, 11], [25, 12]]
+        self.interceptor_trap_short_r = [[24, 11], [25, 12]]
         # interceptor self-destruct trap spawn location
-        self.interceptor_trap_spawn_r = [25, 11]
+        self.interceptor_trap_spawn_short_r = [25, 11]
+        # potential walls to trap in an interceptor to self-destruct
+        self.interceptor_trap_long_r = [[23, 10], [25, 12]]
+        # interceptor self-destruct trap spawn location, for a long (8 frames) "fuse"
+        self.interceptor_trap_spawn_long_r = [24, 10]
         # boolean to decide if algo should add walls to extend path for our own mobile units
         self.avoid_interceptor_path = False
         # x-coordinates of area of opponent's area to calculate their "defensive score"
-        self.count_enemy_unit_x_l = [27, 26, 25, 24, 23, 22]
+        self.count_enemy_unit_x_r = [27, 26, 25, 24, 23, 22]
         # y-coordinates of area of opponent's area to calculate their "defensive score"
-        self.count_enemy_unit_y_l = [14, 15, 16, 17, 18, 19]
+        self.count_enemy_unit_y_r = [14, 15, 16, 17, 18, 19]
+        # boolean to store whether base is left-handed or right-handed
+        self.left = True
+
+        self.demolisher_spawn_r = [14, 0]
+        self.scout_spawn_r = [13, 0]
+        self.attack_wall_r = [21, 11]
+
+        # generate a random number to decide if base will be left or right-handed
+        rand_side = random.randint(0, 1)
+        if rand_side == 0:
+            self.left = True
+            self.base = self.base_l
+            self.demolisher_spawn = self.demolisher_spawn_l
+            self.scout_spawn = self.scout_spawn_l
+            self.attack_wall = self.attack_wall_l
+            self.count_enemy_unit_x = self.count_enemy_unit_x_l
+            self.count_enemy_unit_y = self.count_enemy_unit_y_l
+            self.avoid_interceptor_walls = self.avoid_interceptor_walls_l
+            self.corner_walls = self.corner_walls_l
+        else:
+            self.left = False
+            self.base = self.base_r
+            self.demolisher_spawn = self.demolisher_spawn_r
+            self.scout_spawn = self.scout_spawn_r
+            self.attack_wall = self.attack_wall_r
+            self.count_enemy_unit_x = self.count_enemy_unit_x_r
+            self.count_enemy_unit_y = self.count_enemy_unit_y_r
+            self.avoid_interceptor_walls = self.avoid_interceptor_walls_r
+            self.corner_walls = self.corner_walls_r
+
 
     def on_turn(self, turn_state):
         """
@@ -178,15 +220,24 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.submit_turn()
 
     def strategy(self, game_state):
+        # generate a random number to decide if a "short" or "long" fuse interceptor will be spawned
         rand_num = random.randint(0, 1)
         if rand_num == 0:
-            self.avoid_interceptor_path = False
-            self.interceptor_trap = [[3, 11], [2, 12]]
-            self.interceptor_trap_spawn = [2, 11]
+            # self.avoid_interceptor_path = False
+            if (self.left):
+                self.interceptor_trap = self.interceptor_trap_short_l
+                self.interceptor_trap_spawn = self.interceptor_trap_spawn_short_l
+            else:
+                self.interceptor_trap = self.interceptor_trap_short_r
+                self.interceptor_trap_spawn = self.interceptor_trap_spawn_short_r
         else:
-            #self.avoid_interceptor_path = True turning this off for now
-            self.interceptor_trap = [[4, 10], [2, 12]]
-            self.interceptor_trap_spawn = [3, 10]
+            # self.avoid_interceptor_path = True, turning this off for now
+            if (self.left):
+                self.interceptor_trap = self.interceptor_trap_long_l
+                self.interceptor_trap_spawn = self.interceptor_trap_spawn_long_l
+            else:
+                self.interceptor_trap = self.interceptor_trap_long_r
+                self.interceptor_trap_spawn = self.interceptor_trap_spawn_long_r
 
         # get information of player's SP & MP
         my_resources = game_state.get_resources(player_index = 0)
@@ -220,10 +271,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         if game_state.turn_number >= 3:
             if my_resources[1] >= (num_demolishers*3 + num_scout):
                 # spawn demolishers
-                game_state.attempt_spawn(DEMOLISHER, [13, 0], num_demolishers)
-                game_state.attempt_spawn(SCOUT, [14, 0], num_scout)
-                game_state.attempt_spawn(WALL, [6, 11])
-                game_state.attempt_remove([6, 11])
+                game_state.attempt_spawn(DEMOLISHER, self.demolisher_spawn, num_demolishers)
+                game_state.attempt_spawn(SCOUT, self.scout_spawn, num_scout)
+                game_state.attempt_spawn(WALL, self.attack_wall)
+                game_state.attempt_remove(self.attack_wall)
                 if self.avoid_interceptor_path:
                     game_state.attempt_spawn(WALL, self.avoid_interceptor_walls)
                     game_state.attempt_remove(self.avoid_interceptor_walls)
