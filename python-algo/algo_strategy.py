@@ -48,12 +48,15 @@ class AlgoStrategy(gamelib.AlgoCore):
         BREAKPOINT = 'BREAKPOINT'
         self.base = (
             # First turrets
-            (TURRET, [2, 12]),
-            (TURRET, [4, 12]),
-            (TURRET, [6, 12]),
-            (TURRET, [25, 12]),
+            (TURRET, [3, 12]),
+            (TURRET, [7, 12]),
+            (TURRET, [9, 12]),
+            (TURRET, [26, 12]),
 
             # First front walls
+            (WALL, [11, 13]),
+            (WALL, [10, 13]),
+            (WALL, [9, 13]),
             (WALL, [8, 13]),
             (WALL, [7, 13]),
             (WALL, [6, 13]),
@@ -69,12 +72,10 @@ class AlgoStrategy(gamelib.AlgoCore):
 
             # Back walls
             (WALL, [24, 12]),
-            (WALL, [24, 11]),
-            (WALL, [24, 10]),
-            (WALL, [23, 9]),
-            (WALL, [22, 8]),
-            (WALL, [21, 7]),
-            (WALL, [20, 7]),
+            (WALL, [23, 11]),
+            (WALL, [22, 10]),
+            (WALL, [21, 9]),
+            (WALL, [20, 8]),
             (WALL, [19, 7]),
             (WALL, [18, 7]),
             (WALL, [17, 7]),
@@ -84,24 +85,37 @@ class AlgoStrategy(gamelib.AlgoCore):
             (WALL, [13, 7]),
             (WALL, [12, 7]),
             (WALL, [11, 7]),
-            (WALL, [10, 7]),
-            (WALL, [9, 7]),
-            (WALL, [8, 8]),
-            (WALL, [7, 9]),
-            (WALL, [6, 10]),
+            (WALL, [10, 8]),
+            (WALL, [9, 9]),
+            (WALL, [8, 10]),
 
-            # 1.5th turrets
+            # Second turrets
             (BREAKPOINT, 6),
-            (TURRET, [3, 10]),
+            (TURRET, [7, 8]),
+            (BREAKPOINT, 6),
+            (TURRET, [5, 10]),
+            (BREAKPOINT, 6),
+            (TURRET, [5, 12]),
 
-            # First supports
-            (SUPPORT, [5, 10]),
+            # First supports and side walls
+            (SUPPORT, [4, 11]),
+            (WALL, [5, 9]),
+            (WALL, [22, 9]),
+            (WALL, [19, 6]),
+
+            # Second supports
             (SUPPORT, [6, 9]),
-            (SUPPORT, [7, 8]),
             (SUPPORT, [8, 7]),
             (SUPPORT, [9, 6]),
 
+            # Third turrets
+            (BREAKPOINT, 6),
+            (TURRET, [1, 12]),
+
             # First front wall upgrades
+            (None, [11, 13]),
+            (None, [10, 13]),
+            (None, [9, 13]),
             (None, [8, 13]),
             (None, [7, 13]),
             (None, [6, 13]),
@@ -115,65 +129,60 @@ class AlgoStrategy(gamelib.AlgoCore):
             (None, [26, 13]),
             (None, [27, 13]),
 
-            # Second turret, front walls, and supports
-            (BREAKPOINT, 10),
-            (TURRET, [8, 12]),
-            (WALL, [9, 13]),
-            (WALL, [10, 13]),
-            (SUPPORT, [10, 6]),
-            (SUPPORT, [11, 6]),
-            (SUPPORT, [12, 6]),
-
-            # Third turret, front walls, and supports
-            (BREAKPOINT, 10),
-            (TURRET, [10, 12]),
-            (WALL, [11, 13]),
+            # Fourth turrets, second front walls and upgrades, and third supports
+            (BREAKPOINT, 7),
+            (TURRET, [11, 12]),
             (WALL, [12, 13]),
-            (SUPPORT, [13, 6]),
-            (SUPPORT, [14, 6]),
-            (SUPPORT, [15, 6]),
-
-            # Fourth turret, front walls, and supports
-            (BREAKPOINT, 10),
-            (TURRET, [12, 12]),
             (WALL, [13, 13]),
-            (WALL, [14, 13]),
-            (SUPPORT, [16, 6]),
-            (SUPPORT, [17, 6]),
-            (SUPPORT, [18, 6]),
-            (SUPPORT, [19, 6]),
-            (SUPPORT, [20, 6]),
-
-            # Second wall upgrades
-            (None, [14, 13]),
-            (None, [13, 13]),
-            (None, [12, 13]),
-            (None, [11, 13]),
-            (None, [10, 13]),
-            (None, [9, 13]),
-
-            # Fifth supports
             (SUPPORT, [10, 5]),
             (SUPPORT, [11, 5]),
             (SUPPORT, [12, 5]),
+            (None, [12, 13]),
+            (None, [13, 13]),
+
+            # Fifth turrets, third front walls and upgrades, and fourth supports
+            (BREAKPOINT, 7),
+            (TURRET, [13, 12]),
+            (WALL, [14, 13]),
+            (WALL, [15, 13]),
             (SUPPORT, [13, 5]),
             (SUPPORT, [14, 5]),
             (SUPPORT, [15, 5]),
+            (None, [14, 13]),
+            (None, [15, 13]),
+
+            # Fifth supports
             (SUPPORT, [16, 5]),
             (SUPPORT, [17, 5]),
-            (SUPPORT, [18, 5]),
-            (SUPPORT, [19, 5]),
+
+            # Fifth supports
+            (SUPPORT, [11, 4]),
+            (SUPPORT, [12, 4]),
+            (SUPPORT, [13, 4]),
+            (SUPPORT, [14, 4]),
+            (SUPPORT, [15, 4]),
+            (SUPPORT, [16, 4]),
+
+            # Sixth supports
+            (SUPPORT, [12, 3]),
+            (SUPPORT, [13, 3]),
+            (SUPPORT, [14, 3]),
+            (SUPPORT, [15, 3]),
+
+            # Seventh supports
+            (SUPPORT, [13, 2]),
+            (SUPPORT, [14, 2]),
         )
         self.rebuild_thresholds = {
             WALL: 0.75,
             TURRET: 0.5,
         }
-        self.interceptor_spawn_locations = [1, 12], [26, 12]
+        self.interceptor_spawn_locations = [4, 9], [23, 9], [19, 5], [20, 6]
         self.interceptor_spawn_count = 1
-        self.interceptor_mp_threshold = 15
-        self.scout_spawn_location = [18, 4]
+        self.interceptor_mp_threshold = 10
+        self.scout_spawn_location = [5, 8]
         self.scout_spawn_count = 5
-        self.demolisher_spawn_location = [11, 2]
+        self.demolisher_spawn_location = [7, 6]
         self.demolisher_spawn_count = 1000
         self.scout_and_demolisher_mp_threshold = 11
 
