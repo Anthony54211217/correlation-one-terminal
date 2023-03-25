@@ -1,4 +1,5 @@
 import gamelib
+from itertools import chain
 import random
 import math
 import warnings
@@ -44,77 +45,102 @@ class AlgoStrategy(gamelib.AlgoCore):
         # This is a good place to do initial setup
         self.scored_on_locations = []
 
-        global BREAKPOINT
-        BREAKPOINT = 'BREAKPOINT'
         self.base = (
-            # First supports
+            (WALL, [2, 13]),
+            (WALL, [3, 13]),
+            (WALL, [4, 13]),
+            (WALL, [10, 3]),
+            (WALL, [11, 4]),
+            (WALL, [12, 5]),
+            (WALL, [13, 6]),
+            (WALL, [14, 7]),
+            (WALL, [15, 8]),
+            (WALL, [16, 9]),
+            (WALL, [17, 10]),
+            (WALL, [18, 11]),
+            (WALL, [19, 12]),
+            (WALL, [20, 13]),
+            (WALL, [21, 13]),
+            (WALL, [22, 13]),
+            (WALL, [23, 13]),
+            (WALL, [24, 13]),
+            (WALL, [25, 13]),
+
+            # Zeroth turrets
+            (TURRET, [2, 12]),
+            (TURRET, [24, 12]),
+            (TURRET, [21, 12]),
+            (TURRET, [13, 4]),
+            (TURRET, [15, 6]),
+
+            # Zeroth supports
             (SUPPORT, [13, 1]),
             (SUPPORT, [14, 2]),
             (SUPPORT, [15, 3]),
             (SUPPORT, [16, 4]),
+
+            # Zeroth wall upgrades
+            (None, [2, 13]),
+            (None, [3, 13]),
+            (None, [4, 13]),
+            (None, [20, 13]),
+            (None, [21, 13]),
+            (None, [22, 13]),
+            (None, [23, 13]),
+            (None, [24, 13]),
+            (None, [25, 13]),
+
+            (TURRET, [3, 12]),
+            (TURRET, [23, 12]),
+
+            # Third turrets
+            (TURRET, [17, 8]),
+            (TURRET, [19, 10]),
+
+            # First supports
             (SUPPORT, [12, 1]),
             (SUPPORT, [13, 2]),
             (SUPPORT, [14, 3]),
             (SUPPORT, [15, 4]),
 
-            # First walls
-            (WALL, [17, 5]),
-            (WALL, [18, 6]),
-            (WALL, [19, 7]),
-            (WALL, [20, 8]),
-            (WALL, [21, 9]),
-            (WALL, [22, 10]),
-            (WALL, [23, 11]),
-            (WALL, [24, 12]),
-            (WALL, [25, 13]),
+            # Third walls
+            (WALL, [16, 9]),
+            (WALL, [17, 10]),
+            (WALL, [18, 9]),
+            (WALL, [19, 8]),
 
-            # First turrets
-            (TURRET, [23, 12]),
+            # Second supports
+            (SUPPORT, [16, 5]),
+            (SUPPORT, [17, 5]),
+            (SUPPORT, [17, 6]),
+            (SUPPORT, [18, 6]),
+
+            # Fourth turrets
+            (TURRET, [4, 12]),
             (TURRET, [22, 12]),
-            (TURRET, [22, 11]),
-            (TURRET, [2, 11]),
-            (TURRET, [6, 7]),
-            (TURRET, [10, 4]),
+            (TURRET, [1, 12]),
+            (TURRET, [23, 11]),
 
-            # Second walls
-            (WALL, [24, 13]),
-            (WALL, [23, 13]),
-            (WALL, [22, 13]),
-            (WALL, [21, 13]),
-            (WALL, [20, 13]),
-            (WALL, [19, 13]),
-            (WALL, [18, 13]),
-            (WALL, [17, 12]),
-            (WALL, [16, 11]),
-            (WALL, [15, 10]),
-            (WALL, [14, 9]),
-            (WALL, [13, 8]),
-            (WALL, [12, 7]),
-            (WALL, [11, 6]),
-            (WALL, [10, 5]),
-            (WALL, [9, 4]),
-
-            # Second turrets
-            (TURRET, [14, 8]),
-            (TURRET, [18, 12]),
-            (TURRET, [21, 12]),
-            (TURRET, [21, 11]),
-            (TURRET, [20, 12]),
-            (TURRET, [20, 11]),
-            (TURRET, [20, 10]),
-            (TURRET, [21, 10]),
+            # Fourth walls
+            (WALL, [11, 3]),
+            (WALL, [12, 4]),
+            (WALL, [13, 5]),
+            (WALL, [14, 6]),
+            (WALL, [15, 7]),
+            (WALL, [16, 8]),
+            (WALL, [17, 9]),
+            (WALL, [18, 8]),
         )
         self.rebuild_thresholds = {
-            WALL: 0.75,
-            TURRET: 0.5,
+            WALL: 6,
+            TURRET: 30,
         }
-        self.interception_mp_threshold = 6
-        self.interceptor_locations = [4, 9], [8, 9]
-        self.interceptor_count = 1
-        self.attack_mp_threshold = 8
-        self.demolisher_location = [13, 0]
-        self.demolisher_count = 0
-        self.scout_location = [13, 0]
+        self.build_delay = 3
+        self.interceptor_enemy_mp_thresholds = 0, 0, 0, 15
+        self.interceptor_locations = [9, 4], [6, 7], [18, 4], [18, 4]
+        self.interceptor_counts = 1, 1, 1, 2
+        self.scout_mp_threshold = 6
+        self.scout_locations = [13, 0],
         self.scout_count = 1000
 
     def on_turn(self, turn_state):
@@ -176,48 +202,67 @@ class AlgoStrategy(gamelib.AlgoCore):
         #         game_state.attempt_spawn(SUPPORT, support_locations)
 
     def defend(self, game_state):
+        if game_state.turn_number < self.build_delay:
+            return
+        elif game_state.turn_number == self.build_delay:
+            self.observe(game_state)
+
         for shorthand, location in self.base:
-            if shorthand != BREAKPOINT \
-                    and shorthand in self.rebuild_thresholds \
+            if shorthand in self.rebuild_thresholds \
                     and game_state.contains_stationary_unit(location):
                 threshold = self.rebuild_thresholds[shorthand]
 
                 for unit in game_state.game_map[location]:
                     if not unit.player_index and unit.unit_type == shorthand \
-                            and unit.health < threshold * unit.max_health:
+                            and unit.health <= threshold:
                         game_state.attempt_remove(location)
 
         for shorthand, location in self.base:
-            if shorthand is None:
-                game_state.attempt_upgrade(location)
-            elif shorthand == BREAKPOINT:
-                if game_state.get_resource(SP) < location:
+            if not game_state.contains_stationary_unit(location):
+                if shorthand is None:
+                    status = game_state.attempt_upgrade(location)
+                else:
+                    status = game_state.attempt_spawn(shorthand, location)
+
+                if not status:
                     break
-            else:
-                game_state.attempt_spawn(shorthand, location)
         else:
             for shorthand, location in self.base:
-                if shorthand is not None and shorthand != BREAKPOINT \
-                        and shorthand != INTERCEPTOR:
+                if shorthand is not None:
                     game_state.attempt_upgrade(location)
 
-    def attack(self, game_state):
-        if game_state.get_resource(MP, 1) >= self.interception_mp_threshold:
-            game_state.attempt_spawn(
-                INTERCEPTOR,
-                self.interceptor_locations,
-                self.interceptor_count,
-            )
+    def observe(self, game_state):
+        counter = [0, 0]
 
-        if game_state.get_resource(MP) >= self.attack_mp_threshold:
-            game_state.attempt_spawn(
-                DEMOLISHER,
-                self.demolisher_location,
-                self.demolisher_count,
-            )
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location):
+                for unit in game_state.game_map[location]:
+                    if unit.player_index == 1:
+                        counter[location[0] > 13] += 1
+
+        if counter[1] > counter[0]:
+            for _, location in self.base:
+                location[0] = round(-(location[0] - 13.5) + 13.5)
+
+            for location in chain(
+                    self.interceptor_locations,
+                    self.scout_locations,
+            ):
+                location[0] = round(-(location[0] - 13.5) + 13.5)
+
+    def attack(self, game_state):
+        for threshold, location, count in zip(
+                self.interceptor_enemy_mp_thresholds,
+                self.interceptor_locations,
+                self.interceptor_counts,
+        ):
+            if game_state.get_resource(MP, 1) >= threshold:
+                game_state.attempt_spawn(INTERCEPTOR, location, count)
+
+        if game_state.get_resource(MP) >= self.scout_mp_threshold:
             game_state.attempt_spawn(
                 SCOUT,
-                self.scout_location,
+                self.scout_locations,
                 self.scout_count,
             )
 
