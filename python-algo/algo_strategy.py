@@ -42,6 +42,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         MP = 1
         SP = 0
         # This is a good place to do initial setup
+        self.death_info = []
+        self.self_destruct_info = []
         # self.scored_on_locations = []
         self.avg_sum = 0
         self.avg_count = 0
@@ -225,6 +227,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.submit_turn()
 
     def strategy(self, game_state):
+       # gamelib.debug_write(self.self_destruct_info, " + ", self.death_info)
+        for self_destruct_info in self.self_destruct_info:
+            if game_state.turn_number - 1 == self_destruct_info[0]:
+                if self_destruct_info[2]:
+                    self.avoid_interceptor_path = True
+                    
+
         if self.avg_count != 0:
             self.avg = max(1, math.floor(self.avg_sum/self.avg_count))
         else:
@@ -299,7 +308,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 game_state.attempt_remove(self.attack_wall)
                 if self.avoid_interceptor_path:
                     game_state.attempt_spawn(WALL, self.avoid_interceptor_walls)
-                    game_state.attempt_remove(self.avoid_interceptor_walls)
             else:
                 if game_state.turn_number >= 3:
                     # spawn corner walls
@@ -601,6 +609,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         spawns = events["spawn"]
         turninfo = state["turnInfo"]
         opponent_mp = state["p2Stats"][2]
+        self_destructs = events["selfDestruct"]
+        deaths = events["death"]
         spawned = False
         if turninfo[0] == 1 and turninfo[2] == 0:
             for spawn in spawns:
@@ -617,10 +627,26 @@ class AlgoStrategy(gamelib.AlgoCore):
                     elif spawn[1] == 3:
                         opponent_mp += 1
                         spawned = True
-            # gamelib.debug_write(opponent_mp)
         if spawned:
             self.avg_sum += opponent_mp
             self.avg_count += 1
+        
+        for self_destruct in self_destructs:
+            location = self_destruct[0]
+            unit_owner_self = True if self_destruct[5] == 1 else False
+            if not unit_owner_self: # unit that self destructed was owned by the opponent
+                if self_destruct[3] == 5:
+                    self.self_destruct_info.append((turninfo[1], turninfo[2], self_destruct[1]))
+                    # gamelib.debug_write("self_destruct:", turninfo[1], turninfo[2], self_destruct[1])
+        #for death in deaths:
+            # gamelib.debug_write("death:", death, turninfo[1], turninfo[2])
+         #   unit_owner_self = True if death[3] == 1 else False
+          #  if unit_owner_self:
+           #     if death[2] == 4 or death[2] == 3 or death[2] == 5:
+            #        self.death_info.append((turninfo[1], turninfo[2], death[0]))
+            # gamelib.debug_write(opponent_mp)
+        
+
 
 if __name__ == "__main__":
     algo = AlgoStrategy()
