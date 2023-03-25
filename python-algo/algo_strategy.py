@@ -46,100 +46,70 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.scored_on_locations = []
 
         self.base = (
-            (WALL, [2, 13]),
-            (WALL, [3, 13]),
-            (WALL, [4, 13]),
-            (WALL, [10, 3]),
-            (WALL, [11, 4]),
-            (WALL, [12, 5]),
-            (WALL, [13, 6]),
-            (WALL, [14, 7]),
-            (WALL, [15, 8]),
-            (WALL, [16, 9]),
-            (WALL, [17, 10]),
-            (WALL, [18, 11]),
-            (WALL, [19, 12]),
-            (WALL, [20, 13]),
-            (WALL, [21, 13]),
+            (WALL, [10, 4]),
+            (WALL, [11, 2]),
+            (WALL, [12, 3]),
+            (WALL, [13, 4]),
+            (WALL, [14, 5]),
+            (WALL, [15, 6]),
+            (WALL, [16, 7]),
+            (WALL, [17, 8]),
+            (WALL, [18, 9]),
+            (WALL, [19, 10]),
+            (WALL, [20, 11]),
+            (WALL, [21, 12]),
             (WALL, [22, 13]),
             (WALL, [23, 13]),
             (WALL, [24, 13]),
             (WALL, [25, 13]),
 
-            # Zeroth turrets
-            (TURRET, [2, 12]),
             (TURRET, [24, 12]),
-            (TURRET, [21, 12]),
-            (TURRET, [13, 4]),
-            (TURRET, [15, 6]),
+            (TURRET, [22, 12]),
+            (TURRET, [13, 3]),
+            (TURRET, [15, 5]),
 
-            # Zeroth supports
             (SUPPORT, [13, 1]),
-            (SUPPORT, [14, 2]),
             (SUPPORT, [15, 3]),
-            (SUPPORT, [16, 4]),
 
-            # Zeroth wall upgrades
-            (None, [2, 13]),
-            (None, [3, 13]),
-            (None, [4, 13]),
-            (None, [20, 13]),
-            (None, [21, 13]),
+            (None, [21, 12]),
             (None, [22, 13]),
             (None, [23, 13]),
             (None, [24, 13]),
             (None, [25, 13]),
 
-            (TURRET, [3, 12]),
             (TURRET, [23, 12]),
-
-            # Third turrets
-            (TURRET, [17, 8]),
-            (TURRET, [19, 10]),
-
-            # First supports
-            (SUPPORT, [12, 1]),
-            (SUPPORT, [13, 2]),
-            (SUPPORT, [14, 3]),
-            (SUPPORT, [15, 4]),
-
-            # Third walls
-            (WALL, [16, 9]),
-            (WALL, [17, 10]),
-            (WALL, [18, 9]),
-            (WALL, [19, 8]),
-
-            # Second supports
-            (SUPPORT, [16, 5]),
-            (SUPPORT, [17, 5]),
-            (SUPPORT, [17, 6]),
-            (SUPPORT, [18, 6]),
-
-            # Fourth turrets
-            (TURRET, [4, 12]),
-            (TURRET, [22, 12]),
-            (TURRET, [1, 12]),
             (TURRET, [23, 11]),
 
-            # Fourth walls
-            (WALL, [11, 3]),
-            (WALL, [12, 4]),
-            (WALL, [13, 5]),
-            (WALL, [14, 6]),
-            (WALL, [15, 7]),
-            (WALL, [16, 8]),
-            (WALL, [17, 9]),
-            (WALL, [18, 8]),
+            (SUPPORT, [17, 5]),
+            (SUPPORT, [19, 7]),
+
+            (TURRET, [22, 11]),
+            (TURRET, [21, 11]),
+
+            (SUPPORT, [21, 9]),
+            (SUPPORT, [16, 4]),
+
+            (TURRET, [17, 7]),
+            (TURRET, [19, 9]),
+
+            (SUPPORT, [14, 2]),
+            (SUPPORT, [18, 6]),
+            (SUPPORT, [20, 8]),
+
+            (TURRET, [20, 10]),
+            (TURRET, [18, 8]),
+            (TURRET, [16, 6]),
+            (TURRET, [14, 4]),
+            (TURRET, [12, 2]),
         )
         self.rebuild_thresholds = {
             WALL: 6,
             TURRET: 30,
         }
-        self.build_delay = 3
-        self.interceptor_enemy_mp_thresholds = 0, 0, 0, 15
-        self.interceptor_locations = [9, 4], [6, 7], [18, 4], [18, 4]
-        self.interceptor_counts = 1, 1, 1, 2
-        self.scout_mp_threshold = 6
+        self.interceptor_enemy_mp_thresholds = 0, 15, 20, 20
+        self.interceptor_locations = [10, 3], [18, 4], [10, 3], [18, 4]
+        self.interceptor_counts = 1, 1, 1, 1
+        self.scout_mp_threshold = 7
         self.scout_locations = [13, 0],
         self.scout_count = 1000
 
@@ -202,11 +172,6 @@ class AlgoStrategy(gamelib.AlgoCore):
         #         game_state.attempt_spawn(SUPPORT, support_locations)
 
     def defend(self, game_state):
-        if game_state.turn_number < self.build_delay:
-            return
-        elif game_state.turn_number == self.build_delay:
-            self.observe(game_state)
-
         for shorthand, location in self.base:
             if shorthand in self.rebuild_thresholds \
                     and game_state.contains_stationary_unit(location):
