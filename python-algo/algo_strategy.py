@@ -247,9 +247,11 @@ class AlgoStrategy(gamelib.AlgoCore):
                 else:
                     most_common[location] += 1
             most_common_spawn_location = [max(most_common, key=most_common.get)[0], max(most_common, key=most_common.get)[1]]
-            game_state.attempt_spawn(SCOUT, [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+            # game_state.attempt_spawn(SCOUT, [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
             # gamelib.debug_write(self.opponent_spawn_locations)
             # gamelib.debug_write("most common:", [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+            most_common_opponent_path = game_state.find_path_to_edge(start_location = most_common_spawn_location)
+            gamelib.debug_write(most_common_opponent_path)
 
         # generate a random number to decide if a "short" or "long" fuse interceptor will be spawned
         rand_num = random.randint(0, 1)
@@ -282,8 +284,11 @@ class AlgoStrategy(gamelib.AlgoCore):
             num_demolishers = 3
             num_scout = math.floor(max(my_resources[1] - 9, 0))
         elif num_left_turrets == 0 and num_left_upgraded_walls == 0:
-            num_demolishers = 0
+            num_demolishers = 2
             num_scout = math.floor(max(my_resources[1], 0))
+        elif (num_left_turrets == 1 or num_left_turrets == 2) and num_left_upgraded_walls <= 2:
+            num_demolishers = 3
+            num_scout = math.floor(max(my_resources[1] - 9, 0))
         else:
             defensive_measure = num_left_turrets + score_add
             if defensive_measure == 1:
@@ -295,10 +300,12 @@ class AlgoStrategy(gamelib.AlgoCore):
             elif defensive_measure == 3 or defensive_measure == 4: 
                 num_demolishers = 6
                 num_scout = math.floor(max(my_resources[1] - 18, 0))
-            else:
+            elif defensive_measure == 5:
                 num_demolishers = 7
                 num_scout = math.floor(max(my_resources[1] - 21, 0))
-        
+            else:
+                num_demolishers = 8
+                num_scout = math.floor(max(my_resources[1] - 21, 0))
         if game_state.turn_number >= 3:
             if my_resources[1] >= (num_demolishers*3 + num_scout):
                 # spawn demolishers
@@ -358,7 +365,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                     return
                 elif structure == "UPGRADE_TURRET" and my_resources[0] < 6:
                     return
-                elif structure == "UPGRADE_support" and my_resources[0] < 2:
+                elif structure == "UPGRADE_SUPPORT" and my_resources[0] < 2:
                     return
                 if (structure != "UPGRADE_WALL") and (structure != "UPGRADE_SUPPORT") and (structure != "UPGRADE_TURRET"):
                     game_state.attempt_spawn(structure, location)
@@ -385,7 +392,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         opponent_resources = game_state.get_resources(player_index = 1)
 
         if my_resources[0] >= 20:
-            wall_threshold = 0.9
+            wall_threshold = 0.8
             turret_threshold = 0.64
         else: 
             wall_threshold = 0.7
@@ -396,11 +403,11 @@ class AlgoStrategy(gamelib.AlgoCore):
                 for unit in game_state.game_map[location]:
                     if unit.player_index == 0:
                         if unit.unit_type == WALL:
-                            if not(unit.upgraded):
-                                if unit.health < 12:    
-                                    game_state.attempt_remove(location)
-                                    self.to_rebuild.append((unit.unit_type, location))
-                            elif unit.upgraded:
+                            # if not(unit.upgraded):
+                            #     if unit.health < 12:    
+                            #         game_state.attempt_remove(location)
+                            #         self.to_rebuild.append((unit.unit_type, location))
+                            if unit.upgraded:
                                 if unit.health < 120 * wall_threshold: 
                                     game_state.attempt_remove(location)
                                     self.to_rebuild.append((unit.unit_type, location))
