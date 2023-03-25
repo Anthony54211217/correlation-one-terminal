@@ -24,13 +24,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         super().__init__()
         seed = random.randrange(maxsize)
         random.seed(seed)
-        gamelib.debug_write('Random seed: {}'.format(seed))
+        # gamelib.debug_write('Random seed: {}'.format(seed))
 
     def on_game_start(self, config):
         """ 
         Read in config and perform any initial setup here 
         """
-        gamelib.debug_write('Configuring your custom algo strategy...')
+        # gamelib.debug_write('Configuring your custom algo strategy...')
         self.config = config
         global WALL, SUPPORT, TURRET, SCOUT, DEMOLISHER, INTERCEPTOR, MP, SP
         WALL = config["unitInformation"][0]["shorthand"]
@@ -43,6 +43,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         SP = 0
         # This is a good place to do initial setup
         # self.scored_on_locations = []
+        self.avg_sum = 0
+        self.avg_count = 0
+        self.avg = 10
+        self.opponent_spawn_locations = []
+        self.most_common = {}
         self.opponent_left_x = [i for i in range(0, 14)]
         self.opponent_right_x = [i for i in range(13, 28)]
         # list to store structures that were removed in the previous round that need to be rebuilt
@@ -212,7 +217,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         game engine.
         """
         game_state = gamelib.GameState(self.config, turn_state)
-        gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
+        # gamelib.debug_write('Performing turn {} of your custom algo strategy'.format(game_state.turn_number))
         game_state.suppress_warnings(True)  #Comment or remove this line to enable warnings.
 
         # self.starter_strategy(game_state)
@@ -220,6 +225,23 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.submit_turn()
 
     def strategy(self, game_state):
+        if self.avg_count != 0:
+            self.avg = max(1, math.floor(self.avg_sum/self.avg_count))
+        else:
+            pass
+
+        if self.opponent_spawn_locations:
+            most_common = {}
+            for location in self.opponent_spawn_locations:
+                if location not in most_common.keys():
+                    most_common[location] = 1
+                else:
+                    most_common[location] += 1
+            most_common_spawn_location = [max(most_common, key=most_common.get)[0], max(most_common, key=most_common.get)[1]]
+            game_state.attempt_spawn(SCOUT, [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+            # gamelib.debug_write(self.opponent_spawn_locations)
+            # gamelib.debug_write("most common:", [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+
         # generate a random number to decide if a "short" or "long" fuse interceptor will be spawned
         rand_num = random.randint(0, 1)
         if rand_num == 0:
@@ -267,7 +289,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             else:
                 num_demolishers = 7
                 num_scout = math.floor(max(my_resources[1] - 21, 0))
-
+        
         if game_state.turn_number >= 3:
             if my_resources[1] >= (num_demolishers*3 + num_scout):
                 # spawn demolishers
@@ -285,7 +307,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                     # remove corner walls to allow us to attack corner if we choose to
                     game_state.attempt_remove(self.corner_walls)
                 # if opponent has a lot of MP (15), spawn an interceptor, put this here so that the demolishers will not be blocked 
-                if opponent_resources[1] >= 15:
+                if opponent_resources[1] >= self.avg:
                     # TODO: need logic to decide which side to spawn interceptor to self-destruct on
                     # game_state.attempt_spawn(INTERCEPTOR, [25, 11])
                     # spawn walls to trap interceptor so it will self destruct to defend
@@ -574,6 +596,31 @@ class AlgoStrategy(gamelib.AlgoCore):
                             if demolisher_position in self_destruct[1]:
                                 self.avoid_interceptor_path = True
         """
+        state = json.loads(turn_string)
+        events = state["events"]
+        spawns = events["spawn"]
+        turninfo = state["turnInfo"]
+        opponent_mp = state["p2Stats"][2]
+        spawned = False
+        if turninfo[0] == 1 and turninfo[2] == 0:
+            for spawn in spawns:
+                location = spawn[0]
+                unit_owner_self = True if spawn[3] == 1 else False
+                if not unit_owner_self:
+                    self.opponent_spawn_locations.append((location[0], location[1]))
+                    if spawn[1] == 4:
+                        opponent_mp += 3
+                        spawned = True
+                    elif spawn[1] == 5:
+                        opponent_mp += 1
+                        spawned = True
+                    elif spawn[1] == 3:
+                        opponent_mp += 1
+                        spawned = True
+            # gamelib.debug_write(opponent_mp)
+        if spawned:
+            self.avg_sum += opponent_mp
+            self.avg_count += 1
 
 if __name__ == "__main__":
     algo = AlgoStrategy()
