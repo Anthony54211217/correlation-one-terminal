@@ -60,18 +60,18 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.base_l = [([3, 12], TURRET), 
                        ([5, 11], TURRET), 
                        ([7, 10], TURRET), 
-                       ([0, 13], WALL), ([0, 13], "UPGRADE_WALL"), 
-                       ([2, 13], WALL), ([2, 13], "UPGRADE_WALL"), 
-                       ([3, 13], WALL), ([3, 13], "UPGRADE_WALL"), 
-                       ([4, 13], WALL), ([4, 13], "UPGRADE_WALL"),
-                       ([27, 13], WALL), ([27, 13], "UPGRADE_WALL"), 
-                       ([26, 13], WALL), ([26, 13], "UPGRADE_WALL"),
-                       ([25, 13], WALL), ([25, 13], "UPGRADE_WALL"), 
-                       ([24, 12], WALL), ([24, 12], "UPGRADE_WALL"),
-                       ([5, 12], WALL), ([5, 12], "UPGRADE_WALL"), 
-                       ([7, 12], WALL), ([7, 12], "UPGRADE_WALL"),
-                       ([7, 11], WALL), ([7, 11], "UPGRADE_WALL"), 
-                       ([8, 10], WALL), ([8, 10], "UPGRADE_WALL"),
+                       ([0, 13], WALL), 
+                       ([2, 13], WALL),
+                       ([3, 13], WALL), 
+                       ([4, 13], WALL), 
+                       ([27, 13], WALL),
+                       ([26, 13], WALL), 
+                       ([25, 13], WALL), 
+                       ([24, 12], WALL), 
+                       ([5, 12], WALL),
+                       ([7, 12], WALL), 
+                       ([7, 11], WALL), 
+                       ([8, 10], WALL), 
                        ([25, 11], WALL), 
                        ([24, 10], WALL), 
                        ([8, 9], WALL), 
@@ -90,6 +90,18 @@ class AlgoStrategy(gamelib.AlgoCore):
                        ([19, 7], WALL), 
                        ([20, 7], WALL), 
                        ([21, 7], WALL), 
+                       ([0, 13], "UPGRADE_WALL"), 
+                       ([2, 13], "UPGRADE_WALL"), 
+                       ([3, 13], "UPGRADE_WALL"), 
+                       ([4, 13], "UPGRADE_WALL"),
+                       ([27, 13], "UPGRADE_WALL"), 
+                       ([26, 13], "UPGRADE_WALL"),
+                       ([25, 13], "UPGRADE_WALL"), 
+                       ([24, 12], "UPGRADE_WALL"),
+                       ([5, 12], "UPGRADE_WALL"), 
+                       ([7, 12], "UPGRADE_WALL"),
+                       ([7, 11], "UPGRADE_WALL"), 
+                       ([8, 10], "UPGRADE_WALL"),
                        ([25, 12], TURRET), 
                        ([4, 12], TURRET),
                        ([26, 12], TURRET), 
@@ -186,6 +198,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.scout_spawn_r = [13, 0]
         self.attack_wall_r = [21, 11]
 
+        self.enemy_left_half_x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        self.enemy_right_half_x = [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+        self.enemy_left_half_y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+        self.enemy_right_half_y = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+
         # generate a random number to decide if base will be left or right-handed
         rand_side = random.randint(0, 1)
         if rand_side == 0:
@@ -208,6 +225,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             self.count_enemy_unit_y = self.count_enemy_unit_y_r
             self.avoid_interceptor_walls = self.avoid_interceptor_walls_r
             self.corner_walls = self.corner_walls_r
+        
+        self.picked_side = False
 
 
     def on_turn(self, turn_state):
@@ -227,33 +246,38 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.submit_turn()
 
     def strategy(self, game_state):
-       # gamelib.debug_write(self.self_destruct_info, " + ", self.death_info)
+        # if we haven't picked which side to build base yet
+        if self.picked_side == False:
+            # calculate the defence value of both halves of opponent play area
+            left_val, right_val = self.calculate_defence_value_halves(game_state)
+
+        # if opponent spawned an interceptor that destroyed our units
         for self_destruct_info in self.self_destruct_info:
             if game_state.turn_number - 1 == self_destruct_info[0]:
                 if self_destruct_info[2]:
                     self.avoid_interceptor_path = True
                     
-
+        # TODO: probably remove and and set to constant value of 9 ? -> help to beat against echaveman
         if self.avg_count != 0:
             self.avg = max(1, math.floor(self.avg_sum/self.avg_count))
-        else:
-            pass
 
-        if self.opponent_spawn_locations:
-            most_common = {}
-            for location in self.opponent_spawn_locations:
-                if location not in most_common.keys():
-                    most_common[location] = 1
-                else:
-                    most_common[location] += 1
-            most_common_spawn_location = [max(most_common, key=most_common.get)[0], max(most_common, key=most_common.get)[1]]
-            # game_state.attempt_spawn(SCOUT, [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
-            # gamelib.debug_write(self.opponent_spawn_locations)
-            # gamelib.debug_write("most common:", [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
-            most_common_opponent_path = game_state.find_path_to_edge(start_location = most_common_spawn_location)
-            gamelib.debug_write(most_common_opponent_path)
+        # finding the most common spawn location for our opponent, likely not useful 
+        # if self.opponent_spawn_locations:
+        #     most_common = {}
+        #     for location in self.opponent_spawn_locations:
+        #         if location not in most_common.keys():
+        #             most_common[location] = 1
+        #         else:
+        #             most_common[location] += 1
+        #     most_common_spawn_location = [max(most_common, key=most_common.get)[0], max(most_common, key=most_common.get)[1]]
+        #     # game_state.attempt_spawn(SCOUT, [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+        #     # gamelib.debug_write(self.opponent_spawn_locations)
+        #     # gamelib.debug_write("most common:", [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+        #     most_common_opponent_path = game_state.find_path_to_edge(start_location = most_common_spawn_location)
+        #     gamelib.debug_write(most_common_opponent_path)
 
         # generate a random number to decide if a "short" or "long" fuse interceptor will be spawned
+        # TODO: probably removing 
         rand_num = random.randint(0, 1)
         if rand_num == 0:
             # self.avoid_interceptor_path = False
@@ -272,64 +296,6 @@ class AlgoStrategy(gamelib.AlgoCore):
                 self.interceptor_trap = self.interceptor_trap_long_r
                 self.interceptor_trap_spawn = self.interceptor_trap_spawn_long_r
 
-        # get information of player's SP & MP
-        my_resources = game_state.get_resources(player_index = 0)
-        opponent_resources = game_state.get_resources(player_index = 1)
-
-        # detect number of turrets on small triangle on side we are attacking
-        num_left_turrets = self.detect_enemy_unit(game_state, TURRET, self.count_enemy_unit_x, self.count_enemy_unit_y)
-        num_left_upgraded_walls = self.detect_upgraded_enemy_unit(game_state, WALL, self.count_enemy_unit_x, self.count_enemy_unit_y)
-        score_add = num_left_upgraded_walls//3
-        if num_left_turrets == 0 and num_left_upgraded_walls != 0:
-            num_demolishers = 3
-            num_scout = math.floor(max(my_resources[1] - 9, 0))
-        elif num_left_turrets == 0 and num_left_upgraded_walls == 0:
-            num_demolishers = 2
-            num_scout = math.floor(max(my_resources[1], 0))
-        elif (num_left_turrets == 1 or num_left_turrets == 2) and num_left_upgraded_walls <= 2:
-            num_demolishers = 3
-            num_scout = math.floor(max(my_resources[1] - 9, 0))
-        else:
-            defensive_measure = num_left_turrets + score_add
-            if defensive_measure == 1:
-                num_demolishers = 4
-                num_scout = math.floor(max(my_resources[1] - 12, 0))
-            elif defensive_measure == 2:
-                num_demolishers = 5
-                num_scout = math.floor(max(my_resources[1] - 15, 0))
-            elif defensive_measure == 3 or defensive_measure == 4: 
-                num_demolishers = 6
-                num_scout = math.floor(max(my_resources[1] - 18, 0))
-            elif defensive_measure == 5:
-                num_demolishers = 7
-                num_scout = math.floor(max(my_resources[1] - 21, 0))
-            else:
-                num_demolishers = 8
-                num_scout = math.floor(max(my_resources[1] - 21, 0))
-        if game_state.turn_number >= 3:
-            if my_resources[1] >= (num_demolishers*3 + num_scout):
-                # spawn demolishers
-                game_state.attempt_spawn(DEMOLISHER, self.demolisher_spawn, num_demolishers)
-                game_state.attempt_spawn(SCOUT, self.scout_spawn, num_scout)
-                game_state.attempt_spawn(WALL, self.attack_wall)
-                game_state.attempt_remove(self.attack_wall)
-                if self.avoid_interceptor_path:
-                    game_state.attempt_spawn(WALL, self.avoid_interceptor_walls)
-            else:
-                if game_state.turn_number >= 3:
-                    # spawn corner walls
-                    game_state.attempt_spawn(WALL, self.corner_walls)
-                    # remove corner walls to allow us to attack corner if we choose to
-                    game_state.attempt_remove(self.corner_walls)
-                # if opponent has a lot of MP (15), spawn an interceptor, put this here so that the demolishers will not be blocked 
-                if opponent_resources[1] >= self.avg:
-                    # TODO: need logic to decide which side to spawn interceptor to self-destruct on
-                    # game_state.attempt_spawn(INTERCEPTOR, [25, 11])
-                    # spawn walls to trap interceptor so it will self destruct to defend
-                    game_state.attempt_spawn(WALL, self.interceptor_trap)
-                    game_state.attempt_remove(self.interceptor_trap)
-                    game_state.attempt_spawn(INTERCEPTOR, self.interceptor_trap_spawn)
-
         # if building were refunded previous round, rebuild them this round
         if self.to_rebuild:
             for unit_type, unit_location in self.to_rebuild:
@@ -345,13 +311,89 @@ class AlgoStrategy(gamelib.AlgoCore):
             game_state.attempt_spawn(INTERCEPTOR, interceptor_locations)
 
         elif game_state.turn_number >= 3:
-            # TODO: adjust which side base is facing based on opponent strong side
-            # TODO: split up the locations so code will only build/upgrade most important areas first
-            # TODO: logic decide on when demolishers/scouts are spawned
-            #left_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_left_x, None)
-            #right_turrets = self.detect_enemy_unit(game_state, TURRET, self.opponent_right_x, None)
-            #if left_turrets >= right_turrets:
-            #elif right_turrets > left_turrets:
+            # get information of player's SP & MP
+            my_resources = game_state.get_resources(player_index = 0)
+            opponent_resources = game_state.get_resources(player_index = 1)
+            # picking which base layout, left-hand or right-hand depending on opponent base halves defence value
+            if self.picked_side == False:
+                if (left_val >= right_val):
+                    self.left = True
+                    self.base = self.base_l
+                    self.demolisher_spawn = self.demolisher_spawn_l
+                    self.scout_spawn = self.scout_spawn_l
+                    self.attack_wall = self.attack_wall_l
+                    self.count_enemy_unit_x = self.count_enemy_unit_x_l
+                    self.count_enemy_unit_y = self.count_enemy_unit_y_l
+                    self.avoid_interceptor_walls = self.avoid_interceptor_walls_l
+                    self.corner_walls = self.corner_walls_l
+                    self.picked_side = True
+                elif right_val > left_val:
+                    self.left = False
+                    self.base = self.base_r
+                    self.demolisher_spawn = self.demolisher_spawn_r
+                    self.scout_spawn = self.scout_spawn_r
+                    self.attack_wall = self.attack_wall_r
+                    self.count_enemy_unit_x = self.count_enemy_unit_x_r
+                    self.count_enemy_unit_y = self.count_enemy_unit_y_r
+                    self.avoid_interceptor_walls = self.avoid_interceptor_walls_r
+                    self.corner_walls = self.corner_walls_r
+                    self.picked_side = True
+
+            # detect number of turrets on small triangle on side we are attacking
+            num_left_turrets = self.detect_enemy_unit(game_state, TURRET, self.count_enemy_unit_x, self.count_enemy_unit_y)
+            num_left_upgraded_walls = self.detect_upgraded_enemy_unit(game_state, WALL, self.count_enemy_unit_x, self.count_enemy_unit_y)
+            score_add = num_left_upgraded_walls//3
+            if num_left_turrets == 0 and num_left_upgraded_walls != 0:
+                num_demolishers = 3
+                num_scout = math.floor(max(my_resources[1] - 9, 0))
+            elif num_left_turrets == 0 and num_left_upgraded_walls == 0:
+                num_demolishers = 0
+                num_scout = math.floor(max(my_resources[1], 0))
+            elif (num_left_turrets == 1 or num_left_turrets == 2) and num_left_upgraded_walls <= 2:
+                num_demolishers = 3
+                num_scout = math.floor(max(my_resources[1] - 9, 0))
+            else:
+                defensive_measure = num_left_turrets + score_add
+                if opponent_resources[0] >= 6:
+                    defensive_measure += 1
+                if defensive_measure == 1:
+                    num_demolishers = 4
+                    num_scout = math.floor(max(my_resources[1] - 12, 0))
+                elif defensive_measure == 2:
+                    num_demolishers = 5
+                    num_scout = math.floor(max(my_resources[1] - 15, 0))
+                elif defensive_measure == 3 or defensive_measure == 4: 
+                    num_demolishers = 6
+                    num_scout = math.floor(max(my_resources[1] - 18, 0))
+                #elif defensive_measure == 5:
+                #   num_demolishers = 7
+                #  num_scout = math.floor(max(my_resources[1] - 21, 0))
+                else:
+                    num_demolishers = 8
+                    num_scout = math.floor(max(my_resources[1] - 24, 0))
+            if game_state.turn_number >= 3:
+                if my_resources[1] >= (num_demolishers*3 + num_scout):
+                    # spawn demolishers
+                    game_state.attempt_spawn(DEMOLISHER, self.demolisher_spawn, num_demolishers)
+                    game_state.attempt_spawn(SCOUT, self.scout_spawn, num_scout)
+                    game_state.attempt_spawn(WALL, self.attack_wall)
+                    game_state.attempt_remove(self.attack_wall)
+                    if self.avoid_interceptor_path:
+                        game_state.attempt_spawn(WALL, self.avoid_interceptor_walls)
+                else:
+                    if game_state.turn_number >= 3:
+                        # spawn corner walls
+                        game_state.attempt_spawn(WALL, self.corner_walls)
+                        # remove corner walls to allow us to attack corner if we choose to
+                        game_state.attempt_remove(self.corner_walls)
+                    # if opponent has a lot of MP (15), spawn an interceptor, put this here so that the demolishers will not be blocked 
+                    if opponent_resources[1] >= self.avg:
+                        # TODO: need logic to decide which side to spawn interceptor to self-destruct on
+                        # game_state.attempt_spawn(INTERCEPTOR, [25, 11])
+                        # spawn walls to trap interceptor so it will self destruct to defend
+                        game_state.attempt_spawn(WALL, self.interceptor_trap)
+                        game_state.attempt_remove(self.interceptor_trap)
+                        game_state.attempt_spawn(INTERCEPTOR, self.interceptor_trap_spawn)
 
             for location, structure in self.base:
                 # get information of player's SP & MP
@@ -371,17 +413,55 @@ class AlgoStrategy(gamelib.AlgoCore):
                     game_state.attempt_spawn(structure, location)
                 else:
                     game_state.attempt_upgrade(location)
+
+    def calculate_defence_value_halves(self, game_state):
+        left_val = 0
+        valid_x = self.enemy_left_half_x
+        valid_y = self.enemy_left_half_y
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location):
+                for unit in game_state.game_map[location]:
+                    if unit.player_index == 1 and (valid_x is None or location[0] in valid_x) and (valid_y is None or location[1] in valid_y):
+                        if unit.unit_type == TURRET:
+                            if unit.upgraded:
+                                left_val += 12
+                            else:
+                                left_val += 6
+                        elif unit.unit_type == WALL:
+                            if unit.upgraded:
+                                left_val += 2
+                            else:
+                                left_val += 0.5
+                        if unit.unit_type == SUPPORT:
+                            if unit.upgraded:
+                                left_val += 6
+                            else: 
+                                left_val += 4
+                    left_val = 0
+        right_val = 0
+        valid_x = self.enemy_right_half_x
+        valid_y = self.enemy_right_half_y
+        for location in game_state.game_map:
+            if game_state.contains_stationary_unit(location):
+                for unit in game_state.game_map[location]:
+                    if unit.player_index == 1 and (valid_x is None or location[0] in valid_x) and (valid_y is None or location[1] in valid_y):
+                        if unit.unit_type == TURRET:
+                            if unit.upgraded:
+                                right_val += 12
+                            else:
+                                right_val += 6
+                        elif unit.unit_type == WALL:
+                            if unit.upgraded:
+                                right_val += 2
+                            else:
+                                right_val += 0.5
+                        if unit.unit_type == SUPPORT:
+                            if unit.upgraded:
+                                right_val += 6
+                            else: 
+                                right_val += 4
+        return left_val, right_val
                 
-
-            # find all not blocked mobile unit spawn locations
-            # spawn_filtered = self.filter_blocked_locations(self.spawn_locaations, game_state)
-            # max_demolishers = game_state.number_affordable(DEMOLISHER)
-            # max_scouts = game_state.number_affordable(SCOUT)
-            # for spawn_location in spawn_filtered:
-            #     path = game_state.find_path_to_edge(spawn_location)
-            #     for path_location in path:
-            #         pass
-
     def remove_damaged(self, game_state):
         """
         Find all damaged turrets and walls, remove them, append the unit removed and location to be 
@@ -395,7 +475,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             wall_threshold = 0.8
             turret_threshold = 0.64
         else: 
-            wall_threshold = 0.7
+            wall_threshold = 0.2
             turret_threshold = 0.42
 
         for location in game_state.game_map:
@@ -411,10 +491,10 @@ class AlgoStrategy(gamelib.AlgoCore):
                                 if unit.health < 120 * wall_threshold: 
                                     game_state.attempt_remove(location)
                                     self.to_rebuild.append((unit.unit_type, location))
-                        elif unit.unit_type == TURRET:
-                            if unit.health < 75 * turret_threshold:    
-                                game_state.attempt_remove(location)
-                                self.to_rebuild.append((unit.unit_type, location))
+                        #elif unit.unit_type == TURRET:
+                         #   if unit.health < 75 * turret_threshold:    
+                          #      game_state.attempt_remove(location)
+                           #     self.to_rebuild.append((unit.unit_type, location))
                                     
     """
     NOTE: All the methods after this point are part of the sample starter-algo
