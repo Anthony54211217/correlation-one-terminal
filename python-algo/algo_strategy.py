@@ -56,8 +56,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.to_rebuild = []
         # all possible spawn locations for mobile units
         self.spawn_locaations = [[0, 13], [27, 13], [1, 12], [26, 12], [2, 11], [25, 11], [3, 10], [24, 10], [4, 9], [23, 9], [5, 8], [22, 8], [6, 7], [21, 7], [7, 6], [20, 6], [8, 5], [19, 5], [9, 4], [18, 4], [10, 3], [17, 3], [11, 2], [16, 2], [12, 1], [15, 1], [13, 0], [14, 0]]
+        self.enemy_left_spawn_locations = [[13, 27], [12, 26], [11, 25], [10, 24], [9, 23], [8, 22], [7, 21], [6, 20], [5, 19], [4, 18], [3, 17], [2, 16], [1, 15], [0, 14]]
+        self.enemy_right_spawn_locations = [[14, 27], [15, 26], [16, 25], [17, 24], [18, 23], [19, 22], [20, 21], [21, 20], [22, 19], [23, 18], [24, 17], [25, 16], [26, 15], [27, 14]]
+        
         # list of structures/upgrades to build: will do so in order, so, put higher priority structures in front of list, left-handed
-        self.base_l = [([3, 12], TURRET), 
+        self.base_l = [ ([24, 11], WALL), 
+                       ([23, 10], WALL), 
+                        ([3, 12], TURRET), 
                        ([5, 11], TURRET), 
                        ([7, 10], TURRET), 
                        ([0, 13], WALL), 
@@ -73,7 +78,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                        ([7, 11], WALL), 
                        ([8, 10], WALL), 
                        ([25, 11], WALL), 
-                       ([24, 10], WALL), 
+                       # ([24, 10], WALL), 
                        ([8, 9], WALL), 
                        ([9, 8], WALL), 
                        ([23, 9], WALL),
@@ -90,6 +95,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                        ([19, 7], WALL), 
                        ([20, 7], WALL), 
                        ([21, 7], WALL), 
+                       ([26, 12], TURRET), 
                        ([0, 13], "UPGRADE_WALL"), 
                        ([2, 13], "UPGRADE_WALL"), 
                        ([3, 13], "UPGRADE_WALL"), 
@@ -102,9 +108,11 @@ class AlgoStrategy(gamelib.AlgoCore):
                        ([7, 12], "UPGRADE_WALL"),
                        ([7, 11], "UPGRADE_WALL"), 
                        ([8, 10], "UPGRADE_WALL"),
+                       ([23, 10], "UPGRADE_WALL"), 
+                       ([24, 11], "UPGRADE_WALL"),
+                       ([25, 11], "UPGRADE_WALL"),
                        ([25, 12], TURRET), 
                        ([4, 12], TURRET),
-                       ([26, 12], TURRET), 
                        ([11, 6], SUPPORT), 
                        ([12, 6], SUPPORT), 
                        ([10, 6], SUPPORT), 
@@ -141,13 +149,13 @@ class AlgoStrategy(gamelib.AlgoCore):
                                           [15, 6]
         ]
         # potential walls to trap in an interceptor to self-destruct
-        self.interceptor_trap_short_l = [[3, 11], [2, 12]]
+        self.interceptor_trap_short_l = [[3, 11], [4, 10]]
         # interceptor self-destruct trap spawn location, for a short (4 frames) "fuse"
-        self.interceptor_trap_spawn_short_l = [2, 11]
+        self.interceptor_trap_spawn_short_l = [3, 10]
         # potential walls to trap in an interceptor to self-destruct
-        self.interceptor_trap_long_l = [[4, 10], [2, 12]]
+        # self.interceptor_trap_long_l = [[4, 10], [2, 12]]
         # interceptor self-destruct trap spawn location, for a long (8 frames) "fuse"
-        self.interceptor_trap_spawn_long_l = [3, 10]
+        # self.interceptor_trap_spawn_long_l = [3, 10]
         # x-coordinates of area of opponent's area to calculate their "defensive score"
         self.count_enemy_unit_x_l = [0, 1, 2, 3, 4, 5]
         # y-coordinates of area of opponent's area to calculate their "defensive score"
@@ -261,40 +269,31 @@ class AlgoStrategy(gamelib.AlgoCore):
         if self.avg_count != 0:
             self.avg = max(1, math.floor(self.avg_sum/self.avg_count))
 
-        # finding the most common spawn location for our opponent, likely not useful 
-        # if self.opponent_spawn_locations:
-        #     most_common = {}
-        #     for location in self.opponent_spawn_locations:
-        #         if location not in most_common.keys():
-        #             most_common[location] = 1
-        #         else:
-        #             most_common[location] += 1
-        #     most_common_spawn_location = [max(most_common, key=most_common.get)[0], max(most_common, key=most_common.get)[1]]
-        #     # game_state.attempt_spawn(SCOUT, [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
-        #     # gamelib.debug_write(self.opponent_spawn_locations)
-        #     # gamelib.debug_write("most common:", [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
-        #     most_common_opponent_path = game_state.find_path_to_edge(start_location = most_common_spawn_location)
-        #     gamelib.debug_write(most_common_opponent_path)
+            # game_state.attempt_spawn(SCOUT, [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+            # gamelib.debug_write(self.opponent_spawn_locations)
+            # gamelib.debug_write("most common:", [most_common_spawn_location[0], 27 - most_common_spawn_location[1]])
+            # most_common_opponent_path = game_state.find_path_to_edge(start_location = most_common_spawn_location)
+            # gamelib.debug_write(most_common_opponent_path)
 
         # generate a random number to decide if a "short" or "long" fuse interceptor will be spawned
         # TODO: probably removing 
-        rand_num = random.randint(0, 1)
-        if rand_num == 0:
-            # self.avoid_interceptor_path = False
-            if (self.left):
-                self.interceptor_trap = self.interceptor_trap_short_l
-                self.interceptor_trap_spawn = self.interceptor_trap_spawn_short_l
-            else:
-                self.interceptor_trap = self.interceptor_trap_short_r
-                self.interceptor_trap_spawn = self.interceptor_trap_spawn_short_r
-        else:
-            # self.avoid_interceptor_path = True, turning this off for now
-            if (self.left):
-                self.interceptor_trap = self.interceptor_trap_long_l
-                self.interceptor_trap_spawn = self.interceptor_trap_spawn_long_l
-            else:
-                self.interceptor_trap = self.interceptor_trap_long_r
-                self.interceptor_trap_spawn = self.interceptor_trap_spawn_long_r
+        # rand_num = random.randint(0, 1)
+        # if rand_num == 0:
+        #     # self.avoid_interceptor_path = False
+        #     if (self.left):
+        #         self.interceptor_trap = self.interceptor_trap_short_l
+        #         self.interceptor_trap_spawn = self.interceptor_trap_spawn_short_l
+        #     else:
+        #         self.interceptor_trap = self.interceptor_trap_short_r
+        #         self.interceptor_trap_spawn = self.interceptor_trap_spawn_short_r
+        # else:
+        #     # self.avoid_interceptor_path = True, turning this off for now
+        #     if (self.left):
+        #         self.interceptor_trap = self.interceptor_trap_long_l
+        #         self.interceptor_trap_spawn = self.interceptor_trap_spawn_long_l
+        #     else:
+        #         self.interceptor_trap = self.interceptor_trap_long_r
+        #         self.interceptor_trap_spawn = self.interceptor_trap_spawn_long_r
 
         # if building were refunded previous round, rebuild them this round
         if self.to_rebuild:
@@ -373,29 +372,76 @@ class AlgoStrategy(gamelib.AlgoCore):
                 else:
                     num_demolishers = 8
                     num_scout = math.floor(max(my_resources[1] - 24, 0))
-            if game_state.turn_number >= 3:
-                if my_resources[1] >= (num_demolishers*3 + num_scout):
-                    # spawn demolishers
-                    game_state.attempt_spawn(DEMOLISHER, self.demolisher_spawn, num_demolishers)
-                    game_state.attempt_spawn(SCOUT, self.scout_spawn, num_scout)
-                    game_state.attempt_spawn(WALL, self.attack_wall)
-                    game_state.attempt_remove(self.attack_wall)
-                    if self.avoid_interceptor_path:
-                        game_state.attempt_spawn(WALL, self.avoid_interceptor_walls)
-                else:
-                    if game_state.turn_number >= 3:
-                        # spawn corner walls
-                        game_state.attempt_spawn(WALL, self.corner_walls)
-                        # remove corner walls to allow us to attack corner if we choose to
-                        game_state.attempt_remove(self.corner_walls)
-                    # if opponent has a lot of MP (15), spawn an interceptor, put this here so that the demolishers will not be blocked 
-                    if opponent_resources[1] >= self.avg:
-                        # TODO: need logic to decide which side to spawn interceptor to self-destruct on
-                        # game_state.attempt_spawn(INTERCEPTOR, [25, 11])
-                        # spawn walls to trap interceptor so it will self destruct to defend
-                        game_state.attempt_spawn(WALL, self.interceptor_trap)
-                        game_state.attempt_remove(self.interceptor_trap)
-                        game_state.attempt_spawn(INTERCEPTOR, self.interceptor_trap_spawn)
+            my_resources = game_state.get_resources(player_index = 0)
+            opponent_resources = game_state.get_resources(player_index = 1)
+            if my_resources[1] >= (num_demolishers*3 + num_scout):
+                if opponent_resources[1] >= 9:
+                    if num_scout >= 1:
+                        num_scout -= 1
+                        if self.left:
+                            game_state.attempt_spawn(INTERCEPTOR, [24, 10])
+                        else:
+                            game_state.attempt_spawn(INTERCEPTOR, [3, 10])
+                # spawn demolishers
+                game_state.attempt_spawn(DEMOLISHER, self.demolisher_spawn, num_demolishers)
+                game_state.attempt_spawn(SCOUT, self.scout_spawn, num_scout)
+                game_state.attempt_spawn(WALL, self.attack_wall)
+                game_state.attempt_remove(self.attack_wall)
+                if self.avoid_interceptor_path:
+                    game_state.attempt_spawn(WALL, self.avoid_interceptor_walls)
+            else:
+                if game_state.turn_number >= 3:
+                    # spawn corner walls
+                    game_state.attempt_spawn(WALL, self.corner_walls)
+                    game_state.attempt_upgrade(self.corner_walls)
+                    # remove corner walls to allow us to attack corner if we choose to
+                    game_state.attempt_remove(self.corner_walls)
+                # if opponent has a lot of MP (15), spawn an interceptor, put this here so that the demolishers will not be blocked 
+                if opponent_resources[1] >= 12: # was self.avg       
+                    # finding the most common spawn location for our opponent, likely not useful 
+                    if self.opponent_spawn_locations:
+                        most_common = {}
+                        for location in self.opponent_spawn_locations:
+                            if location not in most_common.keys():
+                                most_common[location] = 1
+                            else:
+                                most_common[location] += 1
+                        most_common_spawn_location = [max(most_common, key=most_common.get)[0], max(most_common, key=most_common.get)[1]]
+                        if most_common_spawn_location in self.enemy_left_spawn_locations:
+                            if self.left:
+                                game_state.attempt_spawn(WALL, [[3, 11], [4, 10]])
+                                game_state.attempt_remove([[3, 11], [4, 10]])
+                                game_state.attempt_spawn(INTERCEPTOR, [3, 10])
+                            else:
+                                game_state.attempt_spawn(INTERCEPTOR, [3, 10])
+                        elif most_common_spawn_location in self.enemy_right_spawn_locations:
+                            if self.left:
+                                game_state.attempt_spawn(INTERCEPTOR, [24, 10])
+                            else:
+                                game_state.attempt_spawn(WALL, [[24, 11], [23, 10]])
+                                game_state.attempt_remove([[24, 11], [23, 10]])
+                                game_state.attempt_spawn(INTERCEPTOR, [24, 10])
+                    else:
+                        if self.left:
+                                game_state.attempt_spawn(WALL, [[3, 11], [4, 10]])
+                                game_state.attempt_remove([[3, 11], [4, 10]])
+                                game_state.attempt_spawn(INTERCEPTOR, [3, 10])
+                        else:
+                            game_state.attempt_spawn(WALL, [[24, 11], [23, 10]])
+                            game_state.attempt_remove([[24, 11], [23, 10]])
+                            game_state.attempt_spawn(INTERCEPTOR, [24, 10])
+
+                    # # spawn walls to trap interceptor so it will self destruct to defend
+                    # if self.left:
+                    #     game_state.attempt_spawn(WALL, [[3, 11], [4, 10]])
+                    #     game_state.attempt_remove([[3, 11], [4, 10]])
+                    #     game_state.attempt_spawn(INTERCEPTOR, [3, 10])
+                    #     game_state.attempt_spawn(INTERCEPTOR, [24, 10])
+                    # else:
+                    #     game_state.attempt_spawn(WALL, [[24, 11], [23, 10]])
+                    #     game_state.attempt_remove([[24, 11], [23, 10]])
+                    #     game_state.attempt_spawn(INTERCEPTOR, [24, 10])
+                    #     game_state.attempt_spawn(INTERCEPTOR, [3, 10])
 
             for location, structure in self.base:
                 # get information of player's SP & MP
