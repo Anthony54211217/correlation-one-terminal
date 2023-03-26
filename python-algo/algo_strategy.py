@@ -246,10 +246,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         game_state.submit_turn()
 
     def strategy(self, game_state):
-        # if we haven't picked which side to build base yet
-        if self.picked_side == False:
-            # calculate the defence value of both halves of opponent play area
-            left_val, right_val = self.calculate_defence_value_halves(game_state)
+        # # if we haven't picked which side to build base yet
+        # if self.picked_side == False:
+        #     # calculate the defence value of both halves of opponent play area
+        #     left_val, right_val = self.calculate_defence_value_halves(game_state)
 
         # if opponent spawned an interceptor that destroyed our units
         for self_destruct_info in self.self_destruct_info:
@@ -316,6 +316,8 @@ class AlgoStrategy(gamelib.AlgoCore):
             opponent_resources = game_state.get_resources(player_index = 1)
             # picking which base layout, left-hand or right-hand depending on opponent base halves defence value
             if self.picked_side == False:
+                # calculate the defence value of both halves of opponent play area
+                left_val, right_val = self.calculate_defence_value_halves(game_state)
                 if (left_val >= right_val):
                     self.left = True
                     self.base = self.base_l
