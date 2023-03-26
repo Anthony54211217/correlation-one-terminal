@@ -12,6 +12,7 @@ class Entity:
         self.location = location
         self.count = count
         self.status = True
+        self.spawn_count = 0
 
     def get_health(self, game_state):
         for unit in game_state.game_map[self.location]:
@@ -40,6 +41,8 @@ class Entity:
     def spawn(self, game_state):
         if not self.status or self.is_spawned(game_state):
             return True
+
+        self.spawn_count += 1
 
         return game_state.attempt_spawn(
             self.shorthand,
@@ -106,17 +109,11 @@ class AlgoStrategy(AlgoCore):
             Entity(SUPPORT, [15, 12]),
         ]
         self.builds = [
-            *(wall.spawn for wall in self.walls),
-            *(turret.spawn for turret in self.turrets[:4]),
-            *(turret.upgrade for turret in self.turrets[:4]),
-            *(wall.upgrade for wall in self.walls[:8]),
-            *(support.spawn for support in self.supports[:2]),
-            *(support.upgrade for support in self.supports[:2]),
-            *(wall.upgrade for wall in self.walls[8:]),
-            *(turret.spawn for turret in self.turrets[4:]),
-            *(turret.upgrade for turret in self.turrets[4:]),
-            *(support.spawn for support in self.supports[2:]),
-            *(support.upgrade for support in self.supports[2:]),
+            *(wall for wall in self.walls),
+            *(turret for turret in self.turrets[:4]),
+            *(support for support in self.supports[:2]),
+            *(turret for turret in self.turrets[4:]),
+            *(support for support in self.supports[2:]),
         ]
         self.upgraded_wall_rebuild_threshold = 0.6
         self.turret_rebuild_threshold = 0.35
@@ -144,6 +141,20 @@ class AlgoStrategy(AlgoCore):
         game_state.submit_turn()
 
     def defend(self, game_state):
+        def upgrade():
+            for support in self.supports:
+                support.upgrade(game_state)
+
+            for wall in self.walls:
+                if wall.spawn_count > 1:
+                    wall.upgrade(game_state)
+
+            for turret in self.turrets:
+                if turret.spawn_count > 1:
+                    turret.upgrade(game_state)
+
+        upgrade()
+
         for wall in self.walls:
             if wall.is_spawned(game_state):
                 min_health = self.upgraded_wall_rebuild_threshold \
@@ -162,8 +173,10 @@ class AlgoStrategy(AlgoCore):
                     turret.remove(game_state)
 
         for build in self.builds:
-            if not build(game_state):
+            if not build.spawn(game_state):
                 break
+
+        upgrade()
 
     def attack(self, game_state):
         if game_state.enemy_health >= self.previous_enemy_health:
